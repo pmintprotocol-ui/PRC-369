@@ -1,103 +1,85 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import "./Types.sol";
+
 /// @title PRC-369 Kernel Events
 /// @author MINTer
-/// @notice Defines all canonical events emitted by the PRC-369 ecosystem.
-/// @dev Part of the immutable PRC-369 Kernel.
+/// @notice Canonical events for the PRC-369 Kernel.
+/// @dev
+/// Part of the immutable PRC-369 Kernel.
 ///
-/// IMPORTANT:
-/// Every implementation should reuse these events whenever possible.
-/// New modules should extend this library instead of redefining events.
-library Events {
+/// DESIGN PRINCIPLES
+/// - No storage
+/// - No functions
+/// - No structs
+/// - No enums
+/// - No errors
+///
+/// This file defines the canonical event language shared by all
+/// PRC-369 compliant implementations.
 
-    /*//////////////////////////////////////////////////////////////
-                            POSITION
-    //////////////////////////////////////////////////////////////*/
+//////////////////////////////////////////////////////////////
+// POSITION EVENTS
+//////////////////////////////////////////////////////////////
 
-    event PositionCreated(
-        uint256 indexed positionId,
-        address indexed owner
-    );
+/// @notice Emitted when a Position is registered.
+event PositionRegistered(PositionId indexed positionId);
 
-    event PositionTransferred(
-        uint256 indexed positionId,
-        address indexed from,
-        address indexed to
-    );
+/// @notice Emitted when a Position is updated.
+event PositionUpdated(PositionId indexed positionId);
 
-    event PositionUpdated(
-        uint256 indexed positionId
-    );
+/// @notice Emitted when a Position is archived.
+event PositionArchived(PositionId indexed positionId);
 
-    event PositionClosed(
-        uint256 indexed positionId
-    );
+//////////////////////////////////////////////////////////////
+// REGISTRY EVENTS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                            RESERVE
-    //////////////////////////////////////////////////////////////*/
+/// @notice Emitted when a Protocol is registered.
+event ProtocolRegistered(ProtocolId indexed protocol);
 
-    event ReserveRegistered(
-        uint256 indexed reserveId,
-        uint8 indexed reserveType,
-        address indexed owner
-    );
+/// @notice Emitted when an Asset Adapter is registered.
+event AdapterRegistered(AdapterId indexed adapter);
 
-    event ReserveReleased(
-        uint256 indexed reserveId
-    );
+//////////////////////////////////////////////////////////////
+// CAPABILITY EVENTS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                             RIGHTS
-    //////////////////////////////////////////////////////////////*/
+/// @notice Emitted when a capability is enabled.
+event CapabilityEnabled(
+    PositionId indexed positionId,
+    CapabilityMask capability
+);
 
-    event RightsTransferred(
-        uint256 indexed positionId,
-        address indexed from,
-        address indexed to
-    );
+/// @notice Emitted when a capability is disabled.
+event CapabilityDisabled(
+    PositionId indexed positionId,
+    CapabilityMask capability
+);
 
-    event RewardsClaimed(
-        uint256 indexed positionId,
-        address indexed account,
-        uint256 amount
-    );
+//////////////////////////////////////////////////////////////
+// LIFECYCLE EVENTS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                              VAULT
-    //////////////////////////////////////////////////////////////*/
+/// @notice Emitted when a Position becomes active.
+event PositionActivated(PositionId indexed positionId);
 
-    event Deposited(
-        uint256 indexed reserveId,
-        address indexed owner
-    );
+/// @notice Emitted when a Position is locked.
+event PositionLocked(PositionId indexed positionId);
 
-    event Withdrawn(
-        uint256 indexed reserveId,
-        address indexed owner
-    );
+/// @notice Emitted when a Position is unlocked.
+event PositionUnlocked(PositionId indexed positionId);
 
-    /*//////////////////////////////////////////////////////////////
-                           SETTLEMENT
-    //////////////////////////////////////////////////////////////*/
+/// @notice Emitted when a Position is redeemed.
+event PositionRedeemed(PositionId indexed positionId);
 
-    event SettlementExecuted(
-        uint256 indexed positionId,
-        uint256 value
-    );
+//////////////////////////////////////////////////////////////
+// SETTLEMENT EVENTS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                           ADAPTER
-    //////////////////////////////////////////////////////////////*/
-
-    event AdapterRegistered(
-        uint8 indexed reserveType,
-        address indexed adapter
-    );
-
-    event AdapterRemoved(
-        uint8 indexed reserveType
-    );
-
-}
+/// @notice Emitted when a Position is settled.
+event PositionSettled(
+    PositionId indexed positionId,
+    SettlementId settlementId
+);
