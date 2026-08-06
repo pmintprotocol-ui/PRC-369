@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import "./Types.sol";
+import "./Version.sol";
 
 /// @title PRC-369 Position Identity
 /// @author MINTer
@@ -20,26 +21,22 @@ import "./Types.sol";
 /// PRC-369 compliant implementations.
 
 //////////////////////////////////////////////////////////////
-// POSITION VERSION
-//////////////////////////////////////////////////////////////
-
-/// @notice Semantic version of a Position Family.
-struct PositionVersion {
-    uint16 major;
-    uint16 minor;
-    uint16 patch;
-}
-
-//////////////////////////////////////////////////////////////
 // POSITION DESCRIPTOR
 //////////////////////////////////////////////////////////////
 
 /// @notice Immutable identity descriptor of a Position.
 struct PositionDescriptor {
+    /// @notice Protocol namespace.
     ProtocolId protocol;
+
+    /// @notice Canonical economic class.
     PositionClassId classId;
+
+    /// @notice Implementation-specific family.
     PositionFamilyId familyId;
-    PositionVersion version;
+
+    /// @notice Semantic version.
+    Version version;
 }
 
 //////////////////////////////////////////////////////////////
@@ -48,6 +45,9 @@ struct PositionDescriptor {
 
 /// @notice Complete immutable definition of a Position.
 struct PositionDefinition {
+    /// @notice Immutable identity.
     PositionDescriptor descriptor;
+
+    /// @notice Supported capabilities.
     CapabilityMask capabilities;
 }
