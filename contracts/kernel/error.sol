@@ -3,112 +3,129 @@ pragma solidity ^0.8.28;
 
 /// @title PRC-369 Kernel Errors
 /// @author MINTer
-/// @notice Defines all custom errors used by the PRC-369 Kernel.
+/// @notice Canonical custom errors for the PRC-369 Kernel.
 /// @dev
-/// Every protocol module MUST use these errors whenever applicable.
-/// New modules should extend this library rather than creating duplicate errors.
-library Errors {
+/// Part of the immutable PRC-369 Kernel.
+///
+/// DESIGN PRINCIPLES
+/// - No storage
+/// - No functions
+/// - No structs
+/// - No enums
+/// - No events
+///
+/// This file defines the canonical language of errors shared by all
+/// PRC-369 compliant implementations.
 
-    /*//////////////////////////////////////////////////////////////
-                            GENERAL
-    //////////////////////////////////////////////////////////////*/
+//////////////////////////////////////////////////////////////
+// GENERAL ERRORS
+//////////////////////////////////////////////////////////////
 
-    /// @notice Caller is not authorized.
-    error Unauthorized();
+/// @notice A required address is the zero address.
+error ZeroAddress();
 
-    /// @notice Invalid address.
-    error InvalidAddress();
+/// @notice A required value is zero.
+error ZeroValue();
 
-    /// @notice Invalid identifier.
-    error InvalidId();
+/// @notice One or more parameters are invalid.
+error InvalidParameter();
 
-    /// @notice Invalid amount.
-    error InvalidAmount();
+/// @notice The requested operation is not supported.
+error UnsupportedOperation();
 
-    /// @notice Invalid configuration.
-    error InvalidConfiguration();
+/// @notice Caller is not authorized.
+error Unauthorized();
 
-    /*//////////////////////////////////////////////////////////////
-                           POSITION
-    //////////////////////////////////////////////////////////////*/
+//////////////////////////////////////////////////////////////
+// IDENTITY ERRORS
+//////////////////////////////////////////////////////////////
 
-    /// @notice Position does not exist.
-    error PositionNotFound();
+/// @notice Invalid protocol identifier.
+error InvalidProtocol();
 
-    /// @notice Position already exists.
-    error PositionAlreadyExists();
+/// @notice Invalid position class.
+error InvalidPositionClass();
 
-    /// @notice Position is locked.
-    error PositionLocked();
+/// @notice Invalid position family.
+error InvalidPositionFamily();
 
-    /// @notice Position is inactive.
-    error PositionInactive();
+/// @notice Invalid version identifier.
+error InvalidVersion();
 
-    /// @notice Invalid position state.
-    error InvalidPositionState();
+//////////////////////////////////////////////////////////////
+// POSITION ERRORS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                           RESERVE
-    //////////////////////////////////////////////////////////////*/
+/// @notice Position does not exist.
+error PositionNotFound();
 
-    /// @notice Reserve not found.
-    error ReserveNotFound();
+/// @notice Position already exists.
+error PositionAlreadyExists();
 
-    /// @notice Reserve already registered.
-    error ReserveAlreadyRegistered();
+/// @notice Position has already been registered.
+error PositionAlreadyRegistered();
 
-    /// @notice Reserve ownership verification failed.
-    error InvalidReserveOwner();
+/// @notice Invalid position state.
+error InvalidPositionState();
 
-    /// @notice Unsupported reserve type.
-    error UnsupportedReserveType();
+//////////////////////////////////////////////////////////////
+// CAPABILITY ERRORS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                         ASSET ADAPTER
-    //////////////////////////////////////////////////////////////*/
+/// @notice Capability is not supported.
+error CapabilityNotSupported();
 
-    /// @notice Asset Adapter not registered.
-    error AdapterNotFound();
+/// @notice Capability is already enabled.
+error CapabilityAlreadyEnabled();
 
-    /// @notice Asset Adapter already registered.
-    error AdapterAlreadyRegistered();
+/// @notice Capability is already disabled.
+error CapabilityAlreadyDisabled();
 
-    /// @notice Adapter is incompatible.
-    error AdapterNotCompatible();
+//////////////////////////////////////////////////////////////
+// REGISTRY ERRORS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                            RIGHTS
-    //////////////////////////////////////////////////////////////*/
+/// @notice Protocol is already registered.
+error ProtocolAlreadyRegistered();
 
-    /// @notice Rights cannot be transferred.
-    error RightsNotTransferable();
+/// @notice Protocol is not registered.
+error ProtocolNotRegistered();
 
-    /// @notice Rights already claimed.
-    error RightsAlreadyClaimed();
+/// @notice Adapter is not registered.
+error AdapterNotRegistered();
 
-    /// @notice Nothing available to claim.
-    error NothingToClaim();
+//////////////////////////////////////////////////////////////
+// ADAPTER ERRORS
+//////////////////////////////////////////////////////////////
 
-    /*//////////////////////////////////////////////////////////////
-                           SETTLEMENT
-    //////////////////////////////////////////////////////////////*/
+/// @notice Invalid adapter.
+error InvalidAdapter();
 
-    /// @notice Settlement validation failed.
-    error SettlementFailed();
+/// @notice Adapter already registered.
+error AdapterAlreadyRegistered();
 
-    /// @notice Economic conservation check failed.
-    error EconomicConservationViolation();
+/// @notice Adapter is not compatible.
+error AdapterNotCompatible();
 
-    /*//////////////////////////////////////////////////////////////
-                             VAULT
-    //////////////////////////////////////////////////////////////*/
+//////////////////////////////////////////////////////////////
+// SETTLEMENT ERRORS
+//////////////////////////////////////////////////////////////
 
-    /// @notice Vault already contains this reserve.
-    error AlreadyDeposited();
+/// @notice Settlement is not allowed.
+error SettlementNotAllowed();
 
-    /// @notice Vault does not contain requested reserve.
-    error NotDeposited();
+/// @notice Settlement has already been executed.
+error SettlementAlreadyExecuted();
 
-    /// @notice Vault operation failed.
-    error VaultOperationFailed();
-}
+/// @notice Settlement has expired.
+error SettlementExpired();
+
+//////////////////////////////////////////////////////////////
+// INTERNAL ERRORS
+//////////////////////////////////////////////////////////////
+
+/// @notice Internal kernel invariant violated.
+error KernelInvariantViolation();
+
+/// @notice Unexpected internal state.
+error UnexpectedState();
