@@ -1,6 +1,6 @@
-# PRC-369
+# PRC-369 
 
-**Programmable Economic Rights Standard for Locked Capital**
+**Programmable Reserve Contract Standard**
 
 PRC-369 is a next-generation protocol standard designed to separate **capital ownership** from **economic rights**, enabling programmable, transferable and composable rights over locked on-chain assets without moving the underlying capital.
 
