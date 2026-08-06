@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 /// @title PRC-369 Kernel Types
 /// @author MINTer
-/// @notice Defines the primitive semantic types used throughout the PRC-369 standard.
+/// @notice Defines the primitive semantic types used throughout the PRC-369 Kernel.
 /// @dev
 /// Part of the immutable PRC-369 Kernel.
 ///
@@ -15,12 +15,11 @@ pragma solidity ^0.8.28;
 /// - No events
 /// - No errors
 ///
-/// This file only defines User Defined Value Types (UDVT).
-///
-/// Every other Kernel module builds upon these primitive domain types.
+/// This file defines only User Defined Value Types (UDVT).
+/// Every other Kernel module builds upon these primitive semantic types.
 
 //////////////////////////////////////////////////////////////
-/// IDENTITY TYPES
+// IDENTITY TYPES
 //////////////////////////////////////////////////////////////
 
 /// @notice Unique identifier of a Position.
@@ -39,20 +38,20 @@ type SettlementId is uint256;
 type RightsId is uint256;
 
 //////////////////////////////////////////////////////////////
-/// VERSION TYPES
+// VERSION TYPES
 //////////////////////////////////////////////////////////////
+
+/// @notice Monotonically increasing nonce associated with a Position.
+type PositionNonce is uint64;
 
 /// @notice Position generation identifier.
 type Generation is uint64;
-
-/// @notice Position nonce.
-type PositionNonce is uint64;
 
 /// @notice Encoded semantic version identifier.
 type VersionId is uint32;
 
 //////////////////////////////////////////////////////////////
-/// CLASSIFICATION TYPES
+// CLASSIFICATION TYPES
 //////////////////////////////////////////////////////////////
 
 /// @notice Position Class identifier.
@@ -61,8 +60,11 @@ type PositionClassId is uint16;
 /// @notice Position Family identifier.
 type PositionFamilyId is uint32;
 
+/// @notice Position State identifier.
+type PositionStateId is uint16;
+
 //////////////////////////////////////////////////////////////
-/// CAPABILITY TYPES
+// CAPABILITY TYPES
 //////////////////////////////////////////////////////////////
 
 /// @notice Bitmask representing supported capabilities.
