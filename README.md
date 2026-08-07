@@ -1060,6 +1060,85 @@ By isolating classification from behavior, the standard achieves greater flexibi
 | Implementation Agnostic | ✓      |
 | Runtime Independent     | ✓      |
 
+## 7.10 PositionRuntime.sol
+
+The `PositionRuntime.sol` module defines the standardized mutable runtime model of a Position within the PRC-369 standard.
+
+While the identity and classification of a Position remain immutable throughout its lifetime, certain operational attributes are expected to evolve as the Position progresses through its lifecycle.
+
+PRC-369 intentionally separates **immutable identity** from **mutable runtime state** to distinguish what a Position *is* from how a Position *currently behaves* during execution.
+
+This separation establishes a deterministic execution model while preserving the permanence of the Position's identity.
+
+The standardized runtime model enables Runtime Engines, Asset Adapters, and protocol implementations to manage Position evolution using a common execution structure independent of business logic or implementation-specific workflows.
+
+The runtime model includes only the universal mutable attributes required by every compliant implementation, such as lifecycle state, generation, nonce, and semantic version. Economic parameters, ownership information, balances, timestamps, and protocol-specific metadata remain outside the Kernel.
+
+The `PositionRuntime.sol` module defines only the canonical runtime structure of the standard. It does not implement lifecycle transitions, validation rules, authorization mechanisms, storage management, or application-specific behavior.
+
+As part of the immutable Kernel, this module establishes the common execution model that allows every compliant implementation to evolve programmable economic positions while preserving deterministic behavior and long-term interoperability.
+
+---
+
+### Design Objectives
+
+The design of `PositionRuntime.sol` is guided by the following objectives:
+
+- Define a standardized mutable runtime model for Positions.
+- Separate immutable identity from mutable execution state.
+- Establish a common execution structure shared by all implementations.
+- Enable deterministic lifecycle evolution.
+- Improve interoperability across Runtime implementations.
+- Support future Runtime extensions without modifying the Kernel.
+- Preserve long-term architectural consistency.
+
+---
+
+### Architectural Notes
+
+The Runtime Model represents the mutable operational context of a Position throughout its lifecycle.
+
+Unlike identity, which remains permanent, runtime attributes evolve as the Position undergoes valid state transitions and protocol operations.
+
+The Kernel defines **what runtime information exists**, while future Runtime modules determine **how and when that information may change**.
+
+This clear separation prevents execution logic from becoming tightly coupled to the semantic model of the protocol and enables independent evolution of Runtime implementations.
+
+---
+
+### Module Summary
+
+| Property              | Value                              |
+| --------------------- | ---------------------------------- |
+| Module                | PositionRuntime.sol                |
+| Category              | Kernel                             |
+| Responsibility        | Standardized Position runtime model |
+| Storage               | None                               |
+| Business Logic        | None                               |
+| Constants             | None                               |
+| Events                | None                               |
+| Errors                | None                               |
+| External Dependencies | Types.sol                          |
+| Mutable               | No                                 |
+| Upgradeable           | No                                 |
+| Kernel Layer          | Core Runtime Semantic Layer        |
+
+---
+
+### Design Characteristics
+
+| Characteristic          | Status |
+| ----------------------- | ------ |
+| Immutable               | ✓      |
+| Deterministic           | ✓      |
+| Stateless               | ✓      |
+| Runtime-Oriented        | ✓      |
+| Auditable               | ✓      |
+| Reusable                | ✓      |
+| Composable              | ✓      |
+| Implementation Agnostic | ✓      |
+| Runtime Independent     | ✓      |
+
 # 8. Kernel Design Philosophy
 
 The PRC-369 Kernel was not designed as a collection of utility contracts.
