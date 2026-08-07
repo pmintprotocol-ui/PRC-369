@@ -21,14 +21,13 @@ import "./Types.sol";
 /// all PRC-369 compliant implementations.
 ///
 /// Each capability occupies a unique bit within CapabilityMask.
-
 library CapabilityFlags {
 
     //////////////////////////////////////////////////////////////
     // TRANSFER CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position ownership can be transferred.
+    /// @notice Position ownership may be transferred.
     CapabilityMask internal constant TRANSFERABLE =
         CapabilityMask.wrap(1 << 0);
 
@@ -36,15 +35,15 @@ library CapabilityFlags {
     // COMPOSITION CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position can be split into multiple Positions.
+    /// @notice Position may be split into multiple Positions.
     CapabilityMask internal constant SPLITTABLE =
         CapabilityMask.wrap(1 << 1);
 
-    /// @notice Multiple Positions can be merged.
+    /// @notice Multiple Positions may merge into one Position.
     CapabilityMask internal constant MERGEABLE =
         CapabilityMask.wrap(1 << 2);
 
-    /// @notice Position can compose with other Positions.
+    /// @notice Position may compose with other Positions.
     CapabilityMask internal constant COMPOSABLE =
         CapabilityMask.wrap(1 << 3);
 
@@ -52,11 +51,11 @@ library CapabilityFlags {
     // LIFECYCLE CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position can be locked.
+    /// @notice Position may be locked.
     CapabilityMask internal constant LOCKABLE =
         CapabilityMask.wrap(1 << 4);
 
-    /// @notice Position can be redeemed.
+    /// @notice Position may be redeemed.
     CapabilityMask internal constant REDEEMABLE =
         CapabilityMask.wrap(1 << 5);
 
@@ -64,7 +63,7 @@ library CapabilityFlags {
     // SETTLEMENT CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position supports settlement.
+    /// @notice Position supports settlement operations.
     CapabilityMask internal constant SETTLABLE =
         CapabilityMask.wrap(1 << 6);
 
@@ -72,7 +71,44 @@ library CapabilityFlags {
     // EVOLUTION CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position definition can evolve.
+    /// @notice Position definition may evolve.
     CapabilityMask internal constant UPGRADABLE =
         CapabilityMask.wrap(1 << 7);
+
+    //////////////////////////////////////////////////////////////
+    // FINANCIAL CAPABILITIES
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Position may be pledged as collateral.
+    CapabilityMask internal constant COLLATERALIZABLE =
+        CapabilityMask.wrap(1 << 8);
+
+    /// @notice Position may be leased.
+    CapabilityMask internal constant LEASABLE =
+        CapabilityMask.wrap(1 << 9);
+
+    /// @notice Position may be fractionalized.
+    CapabilityMask internal constant FRACTIONALIZABLE =
+        CapabilityMask.wrap(1 << 10);
+
+    //////////////////////////////////////////////////////////////
+    // RIGHTS CAPABILITIES
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Rights associated with the Position may be delegated.
+    CapabilityMask internal constant DELEGATABLE =
+        CapabilityMask.wrap(1 << 11);
+
+    /// @notice Rights associated with the Position may be inherited.
+    CapabilityMask internal constant INHERITABLE =
+        CapabilityMask.wrap(1 << 12);
+
+    //////////////////////////////////////////////////////////////
+    // REPRESENTATION CAPABILITIES
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Position may be wrapped into another standardized representation.
+    CapabilityMask internal constant WRAPPABLE =
+        CapabilityMask.wrap(1 << 13);
+
 }
