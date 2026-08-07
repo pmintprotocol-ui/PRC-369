@@ -17,16 +17,21 @@ import "./Version.sol";
 /// - No errors
 /// - No business logic
 ///
-/// This file defines the canonical identity model shared by all
-/// PRC-369 compliant implementations.
+/// This file defines the canonical immutable identity model shared by
+/// all PRC-369 compliant implementations.
 ///
-/// Position identity is immutable throughout the entire lifecycle
-/// of a Position.
+/// Position identity never changes during the lifetime of a Position.
+/// Runtime evolution is handled separately by PositionRuntime.sol.
+
 //////////////////////////////////////////////////////////////
 // POSITION DESCRIPTOR
 //////////////////////////////////////////////////////////////
 
 /// @notice Canonical semantic descriptor of a Position.
+///
+/// @dev
+/// The descriptor defines the economic classification of a Position
+/// independently of its runtime state or implementation details.
 struct PositionDescriptor {
 
     //////////////////////////////////////////////////////////////
@@ -50,9 +55,8 @@ struct PositionDescriptor {
     // VERSIONING
     //////////////////////////////////////////////////////////////
 
-    /// @notice Semantic version.
+    /// @notice Semantic version supported by this Position.
     Version version;
-
 }
 
 //////////////////////////////////////////////////////////////
@@ -60,12 +64,17 @@ struct PositionDescriptor {
 //////////////////////////////////////////////////////////////
 
 /// @notice Complete immutable identity of a Position.
+///
+/// @dev
+/// PositionIdentity combines the semantic descriptor with the
+/// immutable capability set supported by the Position.
+///
+/// Once created, this structure MUST NEVER be modified.
 struct PositionIdentity {
 
-    /// @notice Canonical descriptor.
+    /// @notice Canonical semantic descriptor.
     PositionDescriptor descriptor;
 
-    /// @notice Supported capability set.
+    /// @notice Immutable capability set supported by the Position.
     CapabilityMask capabilities;
-
 }
