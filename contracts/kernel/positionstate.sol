@@ -3,51 +3,62 @@ pragma solidity ^0.8.28;
 
 import "./Types.sol";
 
-/// @title PRC-369 Position State
+/// @title PRC-369 Position States
 /// @author MINTer
-/// @notice Defines the mutable runtime state of a Position.
+/// @notice Defines the canonical lifecycle states of PRC-369 Positions.
 /// @dev
 /// Part of the immutable PRC-369 Kernel.
 ///
 /// DESIGN PRINCIPLES
 /// - No storage
 /// - No functions
+/// - No structs
+/// - No enums
 /// - No events
 /// - No errors
-/// - No business logic
 ///
-/// This file defines the canonical runtime state model shared by all
+/// This library defines the canonical lifecycle states shared by all
 /// PRC-369 compliant implementations.
 ///
-/// Every Position has a mutable runtime state that evolves throughout
-/// its lifecycle while preserving its immutable identity.
-struct PositionRuntime {
+/// Position states represent the mutable lifecycle of a Position.
+/// State transitions are enforced by the Runtime and MUST respect the
+/// Kernel invariants.
+library PositionStates {
 
     //////////////////////////////////////////////////////////////
-    // LIFECYCLE
+    // INITIAL STATES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Current lifecycle state.
-    PositionStateId stateId;
+    /// @notice Position has been created but is not yet active.
+    PositionStateId internal constant CREATED =
+        PositionStateId.wrap(1);
 
     //////////////////////////////////////////////////////////////
-    // EVOLUTION
+    // ACTIVE STATES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Current semantic generation.
-    Generation generation;
+    /// @notice Position is active and fully operational.
+    PositionStateId internal constant ACTIVE =
+        PositionStateId.wrap(2);
 
-    /// @notice Current Position nonce.
-    PositionNonce nonce;
-
-    /// @notice Runtime semantic version.
-    VersionId version;
+    /// @notice Position is temporarily locked.
+    PositionStateId internal constant LOCKED =
+        PositionStateId.wrap(3);
 
     //////////////////////////////////////////////////////////////
-    // CAPABILITIES
+    // TERMINAL STATES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Active capability set.
-    CapabilityMask capabilities;
+    /// @notice Position has been redeemed.
+    PositionStateId internal constant REDEEMED =
+        PositionStateId.wrap(4);
+
+    /// @notice Position has been settled.
+    PositionStateId internal constant SETTLED =
+        PositionStateId.wrap(5);
+
+    /// @notice Position has been archived.
+    PositionStateId internal constant ARCHIVED =
+        PositionStateId.wrap(6);
 
 }
