@@ -19,35 +19,53 @@ import "./Version.sol";
 ///
 /// This file defines the canonical identity model shared by all
 /// PRC-369 compliant implementations.
-
+///
+/// Position identity is immutable throughout the entire lifecycle
+/// of a Position.
 //////////////////////////////////////////////////////////////
 // POSITION DESCRIPTOR
 //////////////////////////////////////////////////////////////
 
-/// @notice Immutable identity descriptor of a Position.
+/// @notice Canonical semantic descriptor of a Position.
 struct PositionDescriptor {
+
+    //////////////////////////////////////////////////////////////
+    // PROTOCOL
+    //////////////////////////////////////////////////////////////
+
     /// @notice Protocol namespace.
     ProtocolId protocol;
 
-    /// @notice Canonical economic class.
+    //////////////////////////////////////////////////////////////
+    // CLASSIFICATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Canonical Position Class.
     PositionClassId classId;
 
-    /// @notice Implementation-specific family.
+    /// @notice Implementation-specific Position Family.
     PositionFamilyId familyId;
+
+    //////////////////////////////////////////////////////////////
+    // VERSIONING
+    //////////////////////////////////////////////////////////////
 
     /// @notice Semantic version.
     Version version;
+
 }
 
 //////////////////////////////////////////////////////////////
-// POSITION DEFINITION
+// POSITION IDENTITY
 //////////////////////////////////////////////////////////////
 
-/// @notice Complete immutable definition of a Position.
-struct PositionDefinition {
-    /// @notice Immutable identity.
+/// @notice Complete immutable identity of a Position.
+struct PositionIdentity {
+
+    /// @notice Canonical descriptor.
     PositionDescriptor descriptor;
 
-    /// @notice Supported capabilities.
+    /// @notice Supported capability set.
     CapabilityMask capabilities;
+
 }
