@@ -20,22 +20,34 @@ import "./Types.sol";
 /// This library defines the canonical Position Classes shared by
 /// all PRC-369 compliant implementations.
 ///
+/// Position Classes describe the economic nature of a Position.
+///
 /// Position Families are implementation-specific and MUST NOT be
 /// defined here.
-
+///
+/// Examples:
+/// - Class: RESERVE
+///   Family: MCReserve, DCReserve, HCReserve...
+///
+/// - Class: VAULT
+///   Family: TreasuryVault, FeeVault...
 library PositionTypes {
 
     //////////////////////////////////////////////////////////////
-    // KERNEL POSITION CLASSES
+    // CAPITAL POSITIONS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Reserve Position.
+    /// @notice Capital reserve Position.
     PositionClassId internal constant RESERVE =
         PositionClassId.wrap(1);
 
     /// @notice Vault Position.
     PositionClassId internal constant VAULT =
         PositionClassId.wrap(2);
+
+    //////////////////////////////////////////////////////////////
+    // MARKET POSITIONS
+    //////////////////////////////////////////////////////////////
 
     /// @notice Liquidity Pool Position.
     PositionClassId internal constant POOL =
@@ -49,15 +61,56 @@ library PositionTypes {
     PositionClassId internal constant DEBT =
         PositionClassId.wrap(5);
 
-    /// @notice Derivative Position.
+    //////////////////////////////////////////////////////////////
+    // DERIVATIVE POSITIONS
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Generic Derivative Position.
     PositionClassId internal constant DERIVATIVE =
         PositionClassId.wrap(6);
 
-    /// @notice Synthetic Position.
+    /// @notice Synthetic Asset Position.
     PositionClassId internal constant SYNTHETIC =
         PositionClassId.wrap(7);
 
+    /// @notice Financial Option Position.
+    PositionClassId internal constant OPTION =
+        PositionClassId.wrap(8);
+
+    /// @notice Futures Contract Position.
+    PositionClassId internal constant FUTURE =
+        PositionClassId.wrap(9);
+
+    //////////////////////////////////////////////////////////////
+    // CERTIFICATE POSITIONS
+    //////////////////////////////////////////////////////////////
+
     /// @notice Receipt Position.
     PositionClassId internal constant RECEIPT =
-        PositionClassId.wrap(8);
+        PositionClassId.wrap(10);
+
+    /// @notice Bond Position.
+    PositionClassId internal constant BOND =
+        PositionClassId.wrap(11);
+
+    //////////////////////////////////////////////////////////////
+    // CONTROL POSITIONS
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Escrow Position.
+    PositionClassId internal constant ESCROW =
+        PositionClassId.wrap(12);
+
+    /// @notice Governance Position.
+    PositionClassId internal constant GOVERNANCE =
+        PositionClassId.wrap(13);
+
+    //////////////////////////////////////////////////////////////
+    // PRODUCTIVITY POSITIONS
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Staking Position.
+    PositionClassId internal constant STAKING =
+        PositionClassId.wrap(14);
+
 }
