@@ -18,19 +18,36 @@ import "./Types.sol";
 ///
 /// This file defines the canonical runtime state model shared by all
 /// PRC-369 compliant implementations.
-
-//////////////////////////////////////////////////////////////
-// POSITION RUNTIME
-//////////////////////////////////////////////////////////////
-
-/// @notice Mutable runtime state of a Position.
+///
+/// Every Position has a mutable runtime state that evolves throughout
+/// its lifecycle while preserving its immutable identity.
 struct PositionRuntime {
-    /// @notice Current lifecycle state identifier.
+
+    //////////////////////////////////////////////////////////////
+    // LIFECYCLE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Current lifecycle state.
     PositionStateId stateId;
 
-    /// @notice Current generation of the Position.
+    //////////////////////////////////////////////////////////////
+    // EVOLUTION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Current semantic generation.
     Generation generation;
 
-    /// @notice Monotonically increasing Position nonce.
+    /// @notice Current Position nonce.
     PositionNonce nonce;
+
+    /// @notice Runtime semantic version.
+    VersionId version;
+
+    //////////////////////////////////////////////////////////////
+    // CAPABILITIES
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Active capability set.
+    CapabilityMask capabilities;
+
 }
