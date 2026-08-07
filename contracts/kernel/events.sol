@@ -24,23 +24,39 @@ import "./Types.sol";
 //////////////////////////////////////////////////////////////
 
 /// @notice Emitted when a Position is registered.
-event PositionRegistered(PositionId indexed positionId);
-
-/// @notice Emitted when a Position is updated.
-event PositionUpdated(PositionId indexed positionId);
+event PositionRegistered(
+    PositionId indexed positionId
+);
 
 /// @notice Emitted when a Position is archived.
-event PositionArchived(PositionId indexed positionId);
+event PositionArchived(
+    PositionId indexed positionId
+);
+
+//////////////////////////////////////////////////////////////
+// POSITION STATE EVENTS
+//////////////////////////////////////////////////////////////
+
+/// @notice Emitted whenever a Position changes its lifecycle state.
+event PositionStateChanged(
+    PositionId indexed positionId,
+    PositionStateId previousState,
+    PositionStateId newState
+);
 
 //////////////////////////////////////////////////////////////
 // REGISTRY EVENTS
 //////////////////////////////////////////////////////////////
 
 /// @notice Emitted when a Protocol is registered.
-event ProtocolRegistered(ProtocolId indexed protocol);
+event ProtocolRegistered(
+    ProtocolId indexed protocol
+);
 
 /// @notice Emitted when an Asset Adapter is registered.
-event AdapterRegistered(AdapterId indexed adapter);
+event AdapterRegistered(
+    AdapterId indexed adapter
+);
 
 //////////////////////////////////////////////////////////////
 // CAPABILITY EVENTS
@@ -49,13 +65,13 @@ event AdapterRegistered(AdapterId indexed adapter);
 /// @notice Emitted when a capability is enabled.
 event CapabilityEnabled(
     PositionId indexed positionId,
-    CapabilityMask capability
+    CapabilityMask indexed capability
 );
 
 /// @notice Emitted when a capability is disabled.
 event CapabilityDisabled(
     PositionId indexed positionId,
-    CapabilityMask capability
+    CapabilityMask indexed capability
 );
 
 //////////////////////////////////////////////////////////////
@@ -63,16 +79,24 @@ event CapabilityDisabled(
 //////////////////////////////////////////////////////////////
 
 /// @notice Emitted when a Position becomes active.
-event PositionActivated(PositionId indexed positionId);
+event PositionActivated(
+    PositionId indexed positionId
+);
 
 /// @notice Emitted when a Position is locked.
-event PositionLocked(PositionId indexed positionId);
+event PositionLocked(
+    PositionId indexed positionId
+);
 
 /// @notice Emitted when a Position is unlocked.
-event PositionUnlocked(PositionId indexed positionId);
+event PositionUnlocked(
+    PositionId indexed positionId
+);
 
 /// @notice Emitted when a Position is redeemed.
-event PositionRedeemed(PositionId indexed positionId);
+event PositionRedeemed(
+    PositionId indexed positionId
+);
 
 //////////////////////////////////////////////////////////////
 // SETTLEMENT EVENTS
