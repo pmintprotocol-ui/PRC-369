@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "./Types.sol";
+
+/// @title PRC-369 Position Runtime
+/// @author MINTer
+/// @notice Defines the mutable runtime state of a Position.
+/// @dev
+/// Part of the immutable PRC-369 Kernel.
+///
+/// DESIGN PRINCIPLES
+/// - No storage
+/// - No functions
+/// - No events
+/// - No errors
+/// - No business logic
+///
+/// This file defines the canonical mutable runtime model shared by all
+/// PRC-369 compliant implementations.
+///
+/// PositionRuntime contains only runtime state that may evolve during
+/// the lifecycle of a Position. Immutable identity and classification
+/// are defined separately by the Kernel.
+struct PositionRuntime {
+
+    //////////////////////////////////////////////////////////////
+    // LIFECYCLE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Current lifecycle state.
+    PositionStateId stateId;
+
+    //////////////////////////////////////////////////////////////
+    // EVOLUTION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Current Position generation.
+    Generation generation;
+
+    /// @notice Monotonically increasing Position nonce.
+    PositionNonce nonce;
+
+    //////////////////////////////////////////////////////////////
+    // VERSIONING
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Runtime semantic version.
+    VersionId version;
+
+}
