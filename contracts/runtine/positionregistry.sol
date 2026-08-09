@@ -17,8 +17,8 @@ import "../kernel/PositionStates.sol";
 /// Responsibilities:
 /// - Register Positions.
 /// - Assign unique PositionIds.
-/// - Store Position identity.
-/// - Initialize Position runtime state.
+/// - Store Position definitions.
+/// - Initialize Position runtime.
 /// - Resolve registered Positions.
 ///
 /// The Registry does NOT:
@@ -38,7 +38,7 @@ contract PositionRegistry {
     /// @notice Next Position identifier to be assigned.
     PositionId private _nextPositionId;
 
-    /// @notice Identity associated with each Position.
+    /// @notice Definition associated with each Position.
     mapping(PositionId => PositionDefinition)
         private _definitions;
 
@@ -77,7 +77,7 @@ contract PositionRegistry {
     //////////////////////////////////////////////////////////////
 
     /// @notice Registers a new PRC-369 Position.
-    /// @param definition Immutable Position definition.
+    /// @param definition Position definition.
     /// @return positionId Newly assigned Position identifier.
     function registerPosition(
         PositionDefinition calldata definition
@@ -90,22 +90,25 @@ contract PositionRegistry {
         }
 
         if (
-            definition.descriptor.protocol
-                == ProtocolId.wrap(bytes32(0))
+            ProtocolId.unwrap(
+                definition.descriptor.protocol
+            ) == bytes32(0)
         ) {
             revert InvalidProtocol();
         }
 
         if (
-            definition.descriptor.classId
-                == PositionClassId.wrap(0)
+            PositionClassId.unwrap(
+                definition.descriptor.classId
+            ) == 0
         ) {
             revert InvalidPositionClass();
         }
 
         if (
-            definition.descriptor.familyId
-                == PositionFamilyId.wrap(0)
+            PositionFamilyId.unwrap(
+                definition.descriptor.familyId
+            ) == 0
         ) {
             revert InvalidPositionFamily();
         }
@@ -127,7 +130,8 @@ contract PositionRegistry {
         _runtime[positionId] = PositionRuntime({
             stateId: PositionStates.CREATED,
             generation: Generation.wrap(0),
-            nonce: PositionNonce.wrap(0)
+            nonce: PositionNonce.wrap(0),
+            version: VersionId.wrap(0)
         });
 
         _registered[positionId] = true;
