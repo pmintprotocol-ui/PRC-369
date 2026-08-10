@@ -8,61 +8,17 @@ import "../kernel/PositionIdentity.sol";
 import "../kernel/PositionRuntime.sol";
 import "../kernel/PositionStates.sol";
 
-/// @title PRC-369 Position Registry
-/// @author MINTer
-/// @notice Canonical registry for PRC-369 Positions.
-/// @dev
-/// Foundational registry component of the PRC-369 Runtime.
-///
-/// Responsibilities:
-/// - Register Positions.
-/// - Assign unique PositionIds.
-/// - Store Position definitions.
-/// - Initialize Position runtime.
-/// - Resolve registered Positions.
-///
-/// The Registry does NOT:
-/// - Execute lifecycle transitions.
-/// - Execute settlements.
-/// - Modify economic rights.
-/// - Interact with Asset Adapters.
-/// - Contain protocol-specific business logic.
-///
-/// Those responsibilities belong to dedicated Runtime modules.
 contract PositionRegistry {
 
-    //////////////////////////////////////////////////////////////
-    // STORAGE
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Next Position identifier to be assigned.
     PositionId private _nextPositionId;
 
-    /// @notice Definition associated with each Position.
-    mapping(PositionId => PositionDefinition)
-        private _definitions;
+    mapping(PositionId => PositionDefinition) private _definitions;
+    mapping(PositionId => PositionRuntime) private _runtime;
+    mapping(PositionId => bool) private _registered;
 
-    /// @notice Runtime state associated with each Position.
-    mapping(PositionId => PositionRuntime)
-        private _runtime;
-
-    /// @notice Tracks whether a Position has been registered.
-    mapping(PositionId => bool)
-        private _registered;
-
-    //////////////////////////////////////////////////////////////
-    // AUTHORITY
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Address authorized to register Positions.
     address public immutable registryAuthority;
+    address public runtimeAuthority;
 
-    //////////////////////////////////////////////////////////////
-    // CONSTRUCTOR
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Initializes the Position Registry.
-    /// @param authority Address authorized to register Positions.
     constructor(address authority) {
         if (authority == address(0)) {
             revert ZeroAddress();
@@ -72,13 +28,18 @@ contract PositionRegistry {
         _nextPositionId = PositionId.wrap(1);
     }
 
-    //////////////////////////////////////////////////////////////
-    // POSITION REGISTRATION
-    //////////////////////////////////////////////////////////////
+    function setRuntimeAuthority(address authority) external {
+        if (msg.sender != registryAuthority) {
+            revert Unauthorized();
+        }
 
-    /// @notice Registers a new PRC-369 Position.
-    /// @param definition Position definition.
-    /// @return positionId Newly assigned Position identifier.
+        if (authority == address(0)) {
+            revert ZeroAddress();
+        }
+
+        runtimeAuthority = authority;
+    }
+
     function registerPosition(
         PositionDefinition calldata definition
     )
@@ -115,15 +76,9 @@ contract PositionRegistry {
 
         positionId = _nextPositionId;
 
-        uint256 nextId =
-            PositionId.unwrap(positionId) + 1;
+        uint256 nextId = PositionId.unwrap(positionId) + 1;
 
-        if (nextId == 0) {
-            revert KernelInvariantViolation();
-        }
-
-        _nextPositionId =
-            PositionId.wrap(nextId);
+        _nextPositionId = PositionId.wrap(nextId);
 
         _definitions[positionId] = definition;
 
@@ -139,38 +94,39 @@ contract PositionRegistry {
         emit PositionRegistered(positionId);
     }
 
-    //////////////////////////////////////////////////////////////
-    // EXISTENCE
-    //////////////////////////////////////////////////////////////
+    function updateRuntime(
+        PositionId positionId,
+        PositionRuntime calldata runtime
+    )
+        external
+    {
+        if (msg.sender != runtimeAuthority) {
+            revert Unauthorized();
+        }
 
-    /// @notice Determines whether a Position is registered.
-    /// @param positionId Position identifier.
-    /// @return True if the Position exists.
+        if (!_registered[positionId]) {
+            revert PositionNotFound();
+        }
+
+        _runtime[positionId] = runtime;
+    }
+
     function positionExists(
         PositionId positionId
     )
-        public
+        external
         view
         returns (bool)
     {
         return _registered[positionId];
     }
 
-    //////////////////////////////////////////////////////////////
-    // POSITION DEFINITION
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Returns the complete definition of a Position.
-    /// @param positionId Position identifier.
-    /// @return definition Position definition.
     function getPositionDefinition(
         PositionId positionId
     )
         external
         view
-        returns (
-            PositionDefinition memory definition
-        )
+        returns (PositionDefinition memory)
     {
         if (!_registered[positionId]) {
             revert PositionNotFound();
@@ -179,21 +135,12 @@ contract PositionRegistry {
         return _definitions[positionId];
     }
 
-    //////////////////////////////////////////////////////////////
-    // POSITION RUNTIME
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Returns the current runtime state of a Position.
-    /// @param positionId Position identifier.
-    /// @return runtime Current runtime state.
     function getPositionRuntime(
         PositionId positionId
     )
         external
         view
-        returns (
-            PositionRuntime memory runtime
-        )
+        returns (PositionRuntime memory)
     {
         if (!_registered[positionId]) {
             revert PositionNotFound();
@@ -202,14 +149,6 @@ contract PositionRegistry {
         return _runtime[positionId];
     }
 
-    //////////////////////////////////////////////////////////////
-    // POSITION RESOLUTION
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Resolves the definition and runtime state of a Position.
-    /// @param positionId Position identifier.
-    /// @return definition Position definition.
-    /// @return runtime Current runtime state.
     function resolvePosition(
         PositionId positionId
     )
@@ -228,16 +167,10 @@ contract PositionRegistry {
         runtime = _runtime[positionId];
     }
 
-    //////////////////////////////////////////////////////////////
-    // NEXT POSITION ID
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Returns the next PositionId that will be assigned.
-    /// @return positionId Next available Position identifier.
     function nextPositionId()
         external
         view
-        returns (PositionId positionId)
+        returns (PositionId)
     {
         return _nextPositionId;
     }
