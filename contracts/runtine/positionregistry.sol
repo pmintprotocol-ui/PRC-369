@@ -111,6 +111,23 @@ contract PositionRegistry {
         _runtime[positionId] = runtime;
     }
 
+    function updateCapabilities(
+        PositionId positionId,
+        CapabilityMask capabilities
+    )
+        external
+    {
+        if (msg.sender != runtimeAuthority) {
+            revert Unauthorized();
+        }
+
+        if (!_registered[positionId]) {
+            revert PositionNotFound();
+        }
+
+        _definitions[positionId].capabilities = capabilities;
+    }
+
     function positionExists(
         PositionId positionId
     )
