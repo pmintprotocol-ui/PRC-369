@@ -10,14 +10,29 @@ import "../kernel/PositionStates.sol";
 
 contract PositionRegistry {
 
+    //////////////////////////////////////////////////////////////
+    // STORAGE
+    //////////////////////////////////////////////////////////////
+
     PositionId private _nextPositionId;
 
-    mapping(PositionId => PositionDefinition) private _definitions;
+    mapping(PositionId => PositionIdentity) private _identities;
+
     mapping(PositionId => PositionRuntime) private _runtime;
+
     mapping(PositionId => bool) private _registered;
 
+    //////////////////////////////////////////////////////////////
+    // AUTHORITIES
+    //////////////////////////////////////////////////////////////
+
     address public immutable registryAuthority;
+
     address public runtimeAuthority;
+
+    //////////////////////////////////////////////////////////////
+    // CONSTRUCTOR
+    //////////////////////////////////////////////////////////////
 
     constructor(address authority) {
         if (authority == address(0)) {
@@ -25,10 +40,19 @@ contract PositionRegistry {
         }
 
         registryAuthority = authority;
+
         _nextPositionId = PositionId.wrap(1);
     }
 
-    function setRuntimeAuthority(address authority) external {
+    //////////////////////////////////////////////////////////////
+    // RUNTIME AUTHORITY
+    //////////////////////////////////////////////////////////////
+
+    function setRuntimeAuthority(
+        address authority
+    )
+        external
+    {
         if (msg.sender != registryAuthority) {
             revert Unauthorized();
         }
@@ -40,8 +64,12 @@ contract PositionRegistry {
         runtimeAuthority = authority;
     }
 
+    //////////////////////////////////////////////////////////////
+    // POSITION REGISTRATION
+    //////////////////////////////////////////////////////////////
+
     function registerPosition(
-        PositionDefinition calldata definition
+        PositionIdentity calldata identity
     )
         external
         returns (PositionId positionId)
@@ -52,7 +80,7 @@ contract PositionRegistry {
 
         if (
             ProtocolId.unwrap(
-                definition.descriptor.protocol
+                identity.descriptor.protocol
             ) == bytes32(0)
         ) {
             revert InvalidProtocol();
@@ -60,7 +88,7 @@ contract PositionRegistry {
 
         if (
             PositionClassId.unwrap(
-                definition.descriptor.classId
+                identity.descriptor.classId
             ) == 0
         ) {
             revert InvalidPositionClass();
@@ -68,19 +96,31 @@ contract PositionRegistry {
 
         if (
             PositionFamilyId.unwrap(
-                definition.descriptor.familyId
+                identity.descriptor.familyId
             ) == 0
         ) {
             revert InvalidPositionFamily();
         }
 
+        //////////////////////////////////////////////////////////
+        // ASSIGN POSITION ID
+        //////////////////////////////////////////////////////////
+
         positionId = _nextPositionId;
 
-        uint256 nextId = PositionId.unwrap(positionId) + 1;
+        _nextPositionId = PositionId.wrap(
+            PositionId.unwrap(positionId) + 1
+        );
 
-        _nextPositionId = PositionId.wrap(nextId);
+        //////////////////////////////////////////////////////////
+        // STORE IDENTITY
+        //////////////////////////////////////////////////////////
 
-        _definitions[positionId] = definition;
+        _identities[positionId] = identity;
+
+        //////////////////////////////////////////////////////////
+        // INITIAL RUNTIME
+        //////////////////////////////////////////////////////////
 
         _runtime[positionId] = PositionRuntime({
             stateId: PositionStates.CREATED,
@@ -89,10 +129,18 @@ contract PositionRegistry {
             version: VersionId.wrap(0)
         });
 
+        //////////////////////////////////////////////////////////
+        // REGISTER
+        //////////////////////////////////////////////////////////
+
         _registered[positionId] = true;
 
         emit PositionRegistered(positionId);
     }
+
+    //////////////////////////////////////////////////////////////
+    // RUNTIME UPDATE
+    //////////////////////////////////////////////////////////////
 
     function updateRuntime(
         PositionId positionId,
@@ -111,22 +159,9 @@ contract PositionRegistry {
         _runtime[positionId] = runtime;
     }
 
-    function updateCapabilities(
-        PositionId positionId,
-        CapabilityMask capabilities
-    )
-        external
-    {
-        if (msg.sender != runtimeAuthority) {
-            revert Unauthorized();
-        }
-
-        if (!_registered[positionId]) {
-            revert PositionNotFound();
-        }
-
-        _definitions[positionId].capabilities = capabilities;
-    }
+    //////////////////////////////////////////////////////////////
+    // EXISTENCE
+    //////////////////////////////////////////////////////////////
 
     function positionExists(
         PositionId positionId
@@ -138,19 +173,27 @@ contract PositionRegistry {
         return _registered[positionId];
     }
 
-    function getPositionDefinition(
+    //////////////////////////////////////////////////////////////
+    // IDENTITY
+    //////////////////////////////////////////////////////////////
+
+    function getPositionIdentity(
         PositionId positionId
     )
         external
         view
-        returns (PositionDefinition memory)
+        returns (PositionIdentity memory)
     {
         if (!_registered[positionId]) {
             revert PositionNotFound();
         }
 
-        return _definitions[positionId];
+        return _identities[positionId];
     }
+
+    //////////////////////////////////////////////////////////////
+    // RUNTIME
+    //////////////////////////////////////////////////////////////
 
     function getPositionRuntime(
         PositionId positionId
@@ -166,13 +209,17 @@ contract PositionRegistry {
         return _runtime[positionId];
     }
 
+    //////////////////////////////////////////////////////////////
+    // RESOLUTION
+    //////////////////////////////////////////////////////////////
+
     function resolvePosition(
         PositionId positionId
     )
         external
         view
         returns (
-            PositionDefinition memory definition,
+            PositionIdentity memory identity,
             PositionRuntime memory runtime
         )
     {
@@ -180,9 +227,13 @@ contract PositionRegistry {
             revert PositionNotFound();
         }
 
-        definition = _definitions[positionId];
+        identity = _identities[positionId];
         runtime = _runtime[positionId];
     }
+
+    //////////////////////////////////////////////////////////////
+    // NEXT ID
+    //////////////////////////////////////////////////////////////
 
     function nextPositionId()
         external
