@@ -9,33 +9,43 @@ import "./PositionRegistry.sol";
 
 /// @title PRC-369 Capability Manager
 /// @author MINTer
-/// @notice Manages the capabilities assigned to PRC-369 Positions.
+/// @notice Manages the mutable capability state of PRC-369 Positions.
 /// @dev
 /// Runtime component responsible for enabling and disabling capabilities.
 ///
-/// The CapabilityManager does NOT define capabilities.
 /// CapabilityFlags.sol defines the canonical capability vocabulary.
 ///
-/// The Registry remains the authoritative storage layer.
+/// PositionRegistry remains the authoritative storage layer for
+/// Position identity and Position runtime.
+///
+/// The CapabilityManager maintains the mutable capability mask
+/// independently from immutable PositionIdentity.
 contract CapabilityManager {
 
     //////////////////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Position Registry used as the authoritative storage layer.
+    /// @notice Position Registry.
     PositionRegistry public immutable registry;
 
-    /// @notice Authority allowed to modify Position capabilities.
+    /// @notice Authority allowed to modify capabilities.
     address public immutable capabilityAuthority;
+
+    /// @notice Active capability mask for each Position.
+    mapping(PositionId => CapabilityMask) private _capabilities;
+
+    /// @notice Tracks whether capability state has been initialized.
+    mapping(PositionId => bool) private _initialized;
+
 
     //////////////////////////////////////////////////////////////
     // CONSTRUCTOR
     //////////////////////////////////////////////////////////////
 
     /// @notice Initializes the Capability Manager.
-    /// @param registryAddress Address of the Position Registry.
-    /// @param authority Address authorized to manage capabilities.
+    /// @param registryAddress Position Registry address.
+    /// @param authority Authority allowed to manage capabilities.
     constructor(
         address registryAddress,
         address authority
@@ -51,6 +61,37 @@ contract CapabilityManager {
         registry = PositionRegistry(registryAddress);
         capabilityAuthority = authority;
     }
+
+
+    //////////////////////////////////////////////////////////////
+    // INITIALIZATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Initializes the mutable capability state for a Position.
+    /// @dev
+    /// The initial capability mask is taken from the immutable
+    /// PositionIdentity stored in the Registry.
+    ///
+    /// @param positionId Position identifier.
+    function initializeCapabilities(
+        PositionId positionId
+    )
+        external
+    {
+        _authorize();
+
+        if (_initialized[positionId]) {
+            revert PositionAlreadyRegistered();
+        }
+
+        PositionIdentity memory identity =
+            registry.getPositionIdentity(positionId);
+
+        _capabilities[positionId] = identity.capabilities;
+
+        _initialized[positionId] = true;
+    }
+
 
     //////////////////////////////////////////////////////////////
     // ENABLE CAPABILITY
@@ -71,11 +112,14 @@ contract CapabilityManager {
             revert ZeroValue();
         }
 
-        PositionDefinition memory definition =
-            registry.getPositionDefinition(positionId);
+        if (!_initialized[positionId]) {
+            revert PositionNotFound();
+        }
 
         uint256 currentMask =
-            CapabilityMask.unwrap(definition.capabilities);
+            CapabilityMask.unwrap(
+                _capabilities[positionId]
+            );
 
         uint256 capabilityMask =
             CapabilityMask.unwrap(capability);
@@ -84,21 +128,18 @@ contract CapabilityManager {
             revert CapabilityAlreadyEnabled();
         }
 
-        CapabilityMask newCapabilities =
-            CapabilityMask.wrap(
-                currentMask | capabilityMask
-            );
+        uint256 newMask =
+            currentMask | capabilityMask;
 
-        registry.updateCapabilities(
-            positionId,
-            newCapabilities
-        );
+        _capabilities[positionId] =
+            CapabilityMask.wrap(newMask);
 
         emit CapabilityEnabled(
             positionId,
             capability
         );
     }
+
 
     //////////////////////////////////////////////////////////////
     // DISABLE CAPABILITY
@@ -119,11 +160,14 @@ contract CapabilityManager {
             revert ZeroValue();
         }
 
-        PositionDefinition memory definition =
-            registry.getPositionDefinition(positionId);
+        if (!_initialized[positionId]) {
+            revert PositionNotFound();
+        }
 
         uint256 currentMask =
-            CapabilityMask.unwrap(definition.capabilities);
+            CapabilityMask.unwrap(
+                _capabilities[positionId]
+            );
 
         uint256 capabilityMask =
             CapabilityMask.unwrap(capability);
@@ -132,15 +176,11 @@ contract CapabilityManager {
             revert CapabilityAlreadyDisabled();
         }
 
-        CapabilityMask newCapabilities =
-            CapabilityMask.wrap(
-                currentMask & ~capabilityMask
-            );
+        uint256 newMask =
+            currentMask & ~capabilityMask;
 
-        registry.updateCapabilities(
-            positionId,
-            newCapabilities
-        );
+        _capabilities[positionId] =
+            CapabilityMask.wrap(newMask);
 
         emit CapabilityDisabled(
             positionId,
@@ -148,11 +188,12 @@ contract CapabilityManager {
         );
     }
 
+
     //////////////////////////////////////////////////////////////
     // READ CAPABILITIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Returns the complete capability mask of a Position.
+    /// @notice Returns the current active capability mask.
     /// @param positionId Position identifier.
     /// @return capabilities Current capability mask.
     function getCapabilities(
@@ -162,20 +203,22 @@ contract CapabilityManager {
         view
         returns (CapabilityMask capabilities)
     {
-        PositionDefinition memory definition =
-            registry.getPositionDefinition(positionId);
+        if (!_initialized[positionId]) {
+            revert PositionNotFound();
+        }
 
-        return definition.capabilities;
+        return _capabilities[positionId];
     }
+
 
     //////////////////////////////////////////////////////////////
     // CHECK CAPABILITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position supports a capability.
+    /// @notice Checks whether a capability is currently enabled.
     /// @param positionId Position identifier.
     /// @param capability Capability flag to check.
-    /// @return supported True when the capability is enabled.
+    /// @return supported True if the capability is enabled.
     function hasCapability(
         PositionId positionId,
         CapabilityMask capability
@@ -188,17 +231,39 @@ contract CapabilityManager {
             return false;
         }
 
-        PositionDefinition memory definition =
-            registry.getPositionDefinition(positionId);
+        if (!_initialized[positionId]) {
+            return false;
+        }
 
         uint256 currentMask =
-            CapabilityMask.unwrap(definition.capabilities);
+            CapabilityMask.unwrap(
+                _capabilities[positionId]
+            );
 
         uint256 capabilityMask =
             CapabilityMask.unwrap(capability);
 
         return (currentMask & capabilityMask) != 0;
     }
+
+
+    //////////////////////////////////////////////////////////////
+    // INITIALIZATION STATUS
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Returns whether capability state has been initialized.
+    /// @param positionId Position identifier.
+    /// @return True if initialized.
+    function capabilitiesInitialized(
+        PositionId positionId
+    )
+        external
+        view
+        returns (bool)
+    {
+        return _initialized[positionId];
+    }
+
 
     //////////////////////////////////////////////////////////////
     // AUTHORIZATION
