@@ -1,0 +1,179 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "../kernel/Types.sol";
+import "../kernel/Errors.sol";
+import "./IPositionSettlement.sol";
+
+/// @title PRC-369 Settlement Controller
+/// @author MINTer
+/// @notice Coordinates authorized settlement execution for Positions.
+/// @dev
+/// The Controller does NOT:
+/// - Store Position identity.
+/// - Store Position runtime.
+/// - Define economic settlement rules.
+/// - Hold settlement balances.
+/// - Implement protocol-specific economics.
+///
+/// A concrete settlement implementation remains responsible for
+/// the actual settlement logic.
+
+contract SettlementController {
+
+    //////////////////////////////////////////////////////////////
+    // SETTLEMENT IMPLEMENTATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Active settlement implementation.
+    IPositionSettlement public settlement;
+
+    //////////////////////////////////////////////////////////////
+    // AUTHORITY
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Authority allowed to manage settlement.
+    address public immutable settlementAuthority;
+
+    //////////////////////////////////////////////////////////////
+    // CONSTRUCTOR
+    //////////////////////////////////////////////////////////////
+
+    constructor(
+        address settlementAddress,
+        address authority
+    ) {
+        if (settlementAddress == address(0)) {
+            revert ZeroAddress();
+        }
+
+        if (authority == address(0)) {
+            revert ZeroAddress();
+        }
+
+        settlement =
+            IPositionSettlement(settlementAddress);
+
+        settlementAuthority =
+            authority;
+    }
+
+    //////////////////////////////////////////////////////////////
+    // SETTLEMENT IMPLEMENTATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Updates the active settlement implementation.
+    /// @param settlementAddress New settlement implementation.
+    function setSettlement(
+        address settlementAddress
+    )
+        external
+    {
+        _authorize();
+
+        if (settlementAddress == address(0)) {
+            revert ZeroAddress();
+        }
+
+        settlement =
+            IPositionSettlement(
+                settlementAddress
+            );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // SUPPORT CHECK
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Checks whether a Position supports settlement.
+    /// @param positionId Position identifier.
+    /// @return supported True if supported.
+    function supportsSettlement(
+        PositionId positionId
+    )
+        external
+        view
+        returns (bool supported)
+    {
+        return settlement.supportsSettlement(
+            positionId
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // PREVIEW
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Previews a settlement operation.
+    /// @param positionId Position identifier.
+    /// @param data Settlement-specific parameters.
+    /// @return result Preview result.
+    function previewSettlement(
+        PositionId positionId,
+        bytes calldata data
+    )
+        external
+        view
+        returns (bytes memory result)
+    {
+        if (
+            !settlement.supportsSettlement(
+                positionId
+            )
+        ) {
+            revert UnsupportedOperation();
+        }
+
+        return settlement.previewSettlement(
+            positionId,
+            data
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // EXECUTE SETTLEMENT
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Executes settlement for a Position.
+    /// @param positionId Position identifier.
+    /// @param data Settlement-specific parameters.
+    /// @return result Settlement result.
+    function settle(
+        PositionId positionId,
+        bytes calldata data
+    )
+        external
+        returns (bytes memory result)
+    {
+        _authorize();
+
+        if (
+            !settlement.supportsSettlement(
+                positionId
+            )
+        ) {
+            revert UnsupportedOperation();
+        }
+
+        return settlement.settle(
+            positionId,
+            data
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // AUTHORIZATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Validates settlement authority.
+    function _authorize()
+        internal
+        view
+    {
+        if (
+            msg.sender != settlementAuthority
+        ) {
+            revert Unauthorized();
+        }
+    }
+}
