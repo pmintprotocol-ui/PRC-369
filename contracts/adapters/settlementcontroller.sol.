@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "../kernel/Types.sol";
 import "../kernel/Errors.sol";
 import "./IPositionSettlement.sol";
+import "./SettlementRegistry.sol";
 
 /// @title PRC-369 Settlement Controller
 /// @author MINTer
@@ -14,25 +15,25 @@ import "./IPositionSettlement.sol";
 /// - Store Position runtime.
 /// - Define economic settlement rules.
 /// - Hold settlement balances.
-/// - Implement protocol-specific economics.
+/// - Register settlement implementations.
 ///
-/// A concrete settlement implementation remains responsible for
-/// the actual settlement logic.
+/// SettlementRegistry remains the authoritative source of
+/// settlement implementations.
 
 contract SettlementController {
 
     //////////////////////////////////////////////////////////////
-    // SETTLEMENT IMPLEMENTATION
+    // REGISTRY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Active settlement implementation.
-    IPositionSettlement public settlement;
+    /// @notice Authoritative Settlement Registry.
+    SettlementRegistry public immutable settlementRegistry;
 
     //////////////////////////////////////////////////////////////
     // AUTHORITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authority allowed to manage settlement.
+    /// @notice Authority allowed to execute settlement.
     address public immutable settlementAuthority;
 
     //////////////////////////////////////////////////////////////
@@ -40,10 +41,10 @@ contract SettlementController {
     //////////////////////////////////////////////////////////////
 
     constructor(
-        address settlementAddress,
+        address registryAddress,
         address authority
     ) {
-        if (settlementAddress == address(0)) {
+        if (registryAddress == address(0)) {
             revert ZeroAddress();
         }
 
@@ -51,53 +52,76 @@ contract SettlementController {
             revert ZeroAddress();
         }
 
-        settlement =
-            IPositionSettlement(settlementAddress);
+        settlementRegistry =
+            SettlementRegistry(registryAddress);
 
         settlementAuthority =
             authority;
     }
 
     //////////////////////////////////////////////////////////////
-    // SETTLEMENT IMPLEMENTATION
+    // RESOLVE SETTLEMENT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Updates the active settlement implementation.
-    /// @param settlementAddress New settlement implementation.
-    function setSettlement(
-        address settlementAddress
+    /// @notice Resolves the active settlement implementation
+    /// for an operation.
+    /// @param operation Operation identifier.
+    /// @return settlement Settlement implementation address.
+    function resolveSettlement(
+        bytes32 operation
     )
         external
+        view
+        returns (address settlement)
     {
-        _authorize();
-
-        if (settlementAddress == address(0)) {
-            revert ZeroAddress();
+        if (operation == bytes32(0)) {
+            revert ZeroValue();
         }
 
-        settlement =
-            IPositionSettlement(
-                settlementAddress
-            );
+        return settlementRegistry.resolveSettlement(
+            operation
+        );
     }
 
     //////////////////////////////////////////////////////////////
     // SUPPORT CHECK
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position supports settlement.
+    /// @notice Checks whether a Position supports settlement
+    /// for a specific operation.
     /// @param positionId Position identifier.
+    /// @param operation Operation identifier.
     /// @return supported True if supported.
     function supportsSettlement(
-        PositionId positionId
+        PositionId positionId,
+        bytes32 operation
     )
         external
         view
         returns (bool supported)
     {
-        return settlement.supportsSettlement(
-            positionId
-        );
+        if (operation == bytes32(0)) {
+            return false;
+        }
+
+        address settlement;
+
+        try settlementRegistry.resolveSettlement(
+            operation
+        )
+            returns (address resolvedSettlement)
+        {
+            settlement = resolvedSettlement;
+        }
+        catch {
+            return false;
+        }
+
+        return
+            IPositionSettlement(settlement)
+                .supportsSettlement(
+                    positionId
+                );
     }
 
     //////////////////////////////////////////////////////////////
@@ -106,28 +130,42 @@ contract SettlementController {
 
     /// @notice Previews a settlement operation.
     /// @param positionId Position identifier.
+    /// @param operation Operation identifier.
     /// @param data Settlement-specific parameters.
     /// @return result Preview result.
     function previewSettlement(
         PositionId positionId,
+        bytes32 operation,
         bytes calldata data
     )
         external
         view
         returns (bytes memory result)
     {
+        if (operation == bytes32(0)) {
+            revert ZeroValue();
+        }
+
+        address settlement =
+            settlementRegistry.resolveSettlement(
+                operation
+            );
+
         if (
-            !settlement.supportsSettlement(
-                positionId
-            )
+            !IPositionSettlement(settlement)
+                .supportsSettlement(
+                    positionId
+                )
         ) {
             revert UnsupportedOperation();
         }
 
-        return settlement.previewSettlement(
-            positionId,
-            data
-        );
+        return
+            IPositionSettlement(settlement)
+                .previewSettlement(
+                    positionId,
+                    data
+                );
     }
 
     //////////////////////////////////////////////////////////////
@@ -136,10 +174,12 @@ contract SettlementController {
 
     /// @notice Executes settlement for a Position.
     /// @param positionId Position identifier.
+    /// @param operation Operation identifier.
     /// @param data Settlement-specific parameters.
     /// @return result Settlement result.
     function settle(
         PositionId positionId,
+        bytes32 operation,
         bytes calldata data
     )
         external
@@ -147,25 +187,37 @@ contract SettlementController {
     {
         _authorize();
 
+        if (operation == bytes32(0)) {
+            revert ZeroValue();
+        }
+
+        address settlement =
+            settlementRegistry.resolveSettlement(
+                operation
+            );
+
         if (
-            !settlement.supportsSettlement(
-                positionId
-            )
+            !IPositionSettlement(settlement)
+                .supportsSettlement(
+                    positionId
+                )
         ) {
             revert UnsupportedOperation();
         }
 
-        return settlement.settle(
-            positionId,
-            data
-        );
+        return
+            IPositionSettlement(settlement)
+                .settle(
+                    positionId,
+                    data
+                );
     }
 
     //////////////////////////////////////////////////////////////
     // AUTHORIZATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates settlement authority.
+    /// @notice Validates Settlement Controller authority.
     function _authorize()
         internal
         view
