@@ -1,0 +1,214 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import "../kernel/Types.sol";
+import "../kernel/Errors.sol";
+import "../kernel/EconomicState.sol";
+import "./EconomicStateRegistry.sol";
+
+/// @title PRC-369 Economic State Manager
+/// @author MINTer
+/// @notice Administrative manager for Economic States.
+/// @dev
+/// This component coordinates administrative operations on
+/// EconomicStateRegistry.
+///
+/// It does NOT:
+/// - Execute settlement.
+/// - Modify Position lifecycle.
+/// - Transfer assets.
+/// - Define protocol-specific economics.
+///
+/// EconomicStateRegistry remains the authoritative storage layer.
+
+contract EconomicStateManager {
+
+    //////////////////////////////////////////////////////////////
+    // REGISTRY
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Authoritative Economic State Registry.
+    EconomicStateRegistry public immutable registry;
+
+    //////////////////////////////////////////////////////////////
+    // AUTHORITY
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Authority allowed to manage Economic States.
+    address public immutable managerAuthority;
+
+    //////////////////////////////////////////////////////////////
+    // CONSTRUCTOR
+    //////////////////////////////////////////////////////////////
+
+    constructor(
+        address registryAddress,
+        address authority
+    ) {
+        if (registryAddress == address(0)) {
+            revert ZeroAddress();
+        }
+
+        if (authority == address(0)) {
+            revert ZeroAddress();
+        }
+
+        registry =
+            EconomicStateRegistry(registryAddress);
+
+        managerAuthority =
+            authority;
+    }
+
+    //////////////////////////////////////////////////////////////
+    // REGISTER
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Registers an Economic State for a Position.
+    /// @param positionId Position identifier.
+    /// @param state Economic State definition.
+    /// @return stateId Assigned Economic State identifier.
+    function registerEconomicState(
+        PositionId positionId,
+        EconomicState calldata state
+    )
+        external
+        returns (EconomicStateId stateId)
+    {
+        _authorize();
+
+        return registry.registerEconomicState(
+            positionId,
+            state
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // UPDATE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Updates the Economic State associated with a Position.
+    /// @param positionId Position identifier.
+    /// @param state Updated Economic State.
+    function updateEconomicState(
+        PositionId positionId,
+        EconomicState calldata state
+    )
+        external
+    {
+        _authorize();
+
+        registry.updateEconomicState(
+            positionId,
+            state
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // EXISTENCE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Checks whether a Position has an Economic State.
+    /// @param positionId Position identifier.
+    /// @return exists True if an Economic State exists.
+    function economicStateExists(
+        PositionId positionId
+    )
+        external
+        view
+        returns (bool exists)
+    {
+        return registry.economicStateExists(
+            positionId
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // STATE EXISTENCE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Checks whether an Economic State exists.
+    /// @param stateId Economic State identifier.
+    /// @return exists True if registered.
+    function stateExists(
+        EconomicStateId stateId
+    )
+        external
+        view
+        returns (bool exists)
+    {
+        return registry.stateExists(
+            stateId
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // RESOLVE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Resolves the Economic State associated with a Position.
+    /// @param positionId Position identifier.
+    /// @return stateId Economic State identifier.
+    /// @return state Economic State data.
+    function resolveEconomicState(
+        PositionId positionId
+    )
+        external
+        view
+        returns (
+            EconomicStateId stateId,
+            EconomicState memory state
+        )
+    {
+        return registry.resolveEconomicState(
+            positionId
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // GET STATE
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Returns an Economic State by identifier.
+    /// @param stateId Economic State identifier.
+    /// @return state Economic State data.
+    function getEconomicState(
+        EconomicStateId stateId
+    )
+        external
+        view
+        returns (EconomicState memory state)
+    {
+        return registry.getEconomicState(
+            stateId
+        );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // NEXT ID
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Returns the next Economic State identifier.
+    /// @return stateId Next identifier.
+    function nextStateId()
+        external
+        view
+        returns (EconomicStateId stateId)
+    {
+        return registry.nextStateId();
+    }
+
+    //////////////////////////////////////////////////////////////
+    // AUTHORIZATION
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Validates Economic State Manager authority.
+    function _authorize()
+        internal
+        view
+    {
+        if (msg.sender != managerAuthority) {
+            revert Unauthorized();
+        }
+    }
+}
