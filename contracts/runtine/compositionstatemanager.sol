@@ -22,7 +22,7 @@ import "./CompositionOperationRegistry.sol";
 /// CompositionStates defines the canonical state vocabulary.
 /// This contract defines the permitted runtime transitions.
 
-contract PositionStateManager {
+contract CompositionStateManager {
 
     //////////////////////////////////////////////////////////////
     // STORAGE
