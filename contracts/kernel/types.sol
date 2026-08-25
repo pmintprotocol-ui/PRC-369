@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.28;
 
 /// @title PRC-369 Kernel Types
@@ -8,6 +9,7 @@ pragma solidity ^0.8.28;
 /// Part of the immutable PRC-369 Kernel.
 ///
 /// DESIGN PRINCIPLES
+///
 /// - No storage
 /// - No functions
 /// - No structs
@@ -24,6 +26,9 @@ pragma solidity ^0.8.28;
 
 /// @notice Unique identifier of a Position.
 type PositionId is uint256;
+
+/// @notice Unique identifier of a Composition.
+type CompositionId is bytes32;
 
 /// @notice Unique identifier of a protocol namespace.
 type ProtocolId is bytes32;
@@ -62,6 +67,9 @@ type PositionFamilyId is uint32;
 
 /// @notice Position State identifier.
 type PositionStateId is uint16;
+
+/// @notice Composition State identifier.
+type CompositionStateId is uint16;
 
 //////////////////////////////////////////////////////////////
 // CAPABILITY TYPES
