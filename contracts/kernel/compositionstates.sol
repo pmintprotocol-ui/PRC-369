@@ -28,43 +28,42 @@ library CompositionStates {
     //////////////////////////////////////////////////////////////
 
     /// @notice Composition has been created but not configured.
-    PositionStateId internal constant CREATED =
-        PositionStateId.wrap(1);
+    CompositionStateId internal constant CREATED =
+        CompositionStateId.wrap(1);
 
     /// @notice Composition is being configured.
-    PositionStateId internal constant CONFIGURING =
-        PositionStateId.wrap(2);
+    CompositionStateId internal constant CONFIGURING =
+        CompositionStateId.wrap(2);
 
     //////////////////////////////////////////////////////////////
     // VALIDATION STATES
     //////////////////////////////////////////////////////////////
 
     /// @notice Composition has satisfied its structural requirements.
-    PositionStateId internal constant READY =
-        PositionStateId.wrap(3);
+    CompositionStateId internal constant READY =
+        CompositionStateId.wrap(3);
 
     //////////////////////////////////////////////////////////////
     // EXECUTION STATES
     //////////////////////////////////////////////////////////////
 
     /// @notice Composition execution is currently in progress.
-    PositionStateId internal constant EXECUTING =
-        PositionStateId.wrap(4);
+    CompositionStateId internal constant EXECUTING =
+        CompositionStateId.wrap(4);
 
     /// @notice Composition execution completed successfully.
-    PositionStateId internal constant COMPLETED =
-        PositionStateId.wrap(5);
+    CompositionStateId internal constant COMPLETED =
+        CompositionStateId.wrap(5);
 
     //////////////////////////////////////////////////////////////
     // TERMINAL STATES
     //////////////////////////////////////////////////////////////
 
     /// @notice Composition was cancelled before completion.
-    PositionStateId internal constant CANCELLED =
-        PositionStateId.wrap(6);
+    CompositionStateId internal constant CANCELLED =
+        CompositionStateId.wrap(6);
 
     /// @notice Composition failed during execution.
-    PositionStateId internal constant FAILED =
-        PositionStateId.wrap(7);
-
+    CompositionStateId internal constant FAILED =
+        CompositionStateId.wrap(7);
 }
