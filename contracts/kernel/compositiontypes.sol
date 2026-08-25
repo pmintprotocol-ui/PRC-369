@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.28;
 
 import "./Types.sol";
@@ -7,7 +6,7 @@ import "./Types.sol";
 /// @title PRC-369 Composition Types
 /// @author MINTer
 /// @notice Defines the primitive semantic types used by PRC-369
-///         composition operations.
+///         Composition modules.
 /// @dev
 /// Part of the immutable PRC-369 Kernel.
 ///
@@ -19,15 +18,15 @@ import "./Types.sol";
 /// - No events
 /// - No errors
 ///
-/// This file defines only User Defined Value Types (UDVT).
-/// Runtime composition modules build upon these primitive types.
+/// This file defines only Composition-specific primitive types
+/// that are NOT already defined by Types.sol.
 
 //////////////////////////////////////////////////////////////
-// COMPOSITION IDENTIFIERS
+// COMPOSITION OPERATION TYPES
 //////////////////////////////////////////////////////////////
 
-/// @notice Unique identifier of a composition operation type.
+/// @notice Unique identifier of a Composition operation type.
 type CompositionOperationId is bytes32;
 
-/// @notice Identifier of a composition source group.
+/// @notice Identifier of a Composition source group.
 type CompositionGroupId is bytes32;
