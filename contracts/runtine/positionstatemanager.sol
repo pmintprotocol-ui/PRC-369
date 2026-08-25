@@ -9,23 +9,19 @@ import "./PositionRegistry.sol";
 
 /// @title PRC-369 Position State Manager
 /// @author MINTer
-/// @notice Manages the mutable lifecycle state of PRC-369 Positions.
+/// @notice Manages lifecycle state transitions of PRC-369 Positions.
 /// @dev
-/// Runtime component responsible for controlling Position lifecycle state.
+/// PositionRegistry remains the authoritative Position Runtime store.
 ///
-/// It does NOT:
+/// This contract does NOT:
 /// - Define Position identity.
-/// - Store Position identity.
+/// - Store a second copy of Position Runtime.
+/// - Modify capabilities.
+/// - Manage Position access.
 /// - Execute economic settlement.
-/// - Transfer assets.
-/// - Modify EconomicState.
-/// - Define Position capabilities.
+/// - Execute Composition operations.
 ///
-/// PositionRegistry remains authoritative for Position runtime storage.
-/// PositionStates defines the canonical Position state vocabulary.
-///
-/// This contract defines controlled Position state transitions.
-
+/// It only validates and coordinates Position state transitions.
 contract PositionStateManager {
 
     //////////////////////////////////////////////////////////////
@@ -35,7 +31,7 @@ contract PositionStateManager {
     /// @notice Authoritative Position Registry.
     PositionRegistry public immutable registry;
 
-    /// @notice Authority allowed to modify Position state.
+    /// @notice Authority allowed to manage Position states.
     address public immutable stateAuthority;
 
     //////////////////////////////////////////////////////////////
@@ -54,74 +50,20 @@ contract PositionStateManager {
             revert ZeroAddress();
         }
 
-        registry = PositionRegistry(registryAddress);
-        stateAuthority = authority;
+        registry =
+            PositionRegistry(registryAddress);
+
+        stateAuthority =
+            authority;
     }
 
     //////////////////////////////////////////////////////////////
-    // INITIALIZE
+    // STATE UPDATE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Returns the current Position state.
+    /// @notice Updates a Position to a new lifecycle state.
     /// @param positionId Position identifier.
-    /// @return state Current Position state.
-    function getState(
-        PositionId positionId
-    )
-        external
-        view
-        returns (
-            PositionStateId state
-        )
-    {
-        if (!registry.positionExists(positionId)) {
-            revert PositionNotFound();
-        }
-
-        PositionRuntime memory runtime =
-            registry.getPositionRuntime(positionId);
-
-        return runtime.stateId;
-    }
-
-    //////////////////////////////////////////////////////////////
-    // STATE CHECK
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Checks whether a Position is currently in a state.
-    /// @param positionId Position identifier.
-    /// @param state State to check.
-    /// @return matches True when the state matches.
-    function isState(
-        PositionId positionId,
-        PositionStateId state
-    )
-        external
-        view
-        returns (
-            bool matches
-        )
-    {
-        if (!registry.positionExists(positionId)) {
-            return false;
-        }
-
-        PositionRuntime memory runtime =
-            registry.getPositionRuntime(positionId);
-
-        return
-            PositionStateId.unwrap(runtime.stateId)
-            ==
-            PositionStateId.unwrap(state);
-    }
-
-    //////////////////////////////////////////////////////////////
-    // TRANSITION
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Transitions a Position to a new lifecycle state.
-    /// @param positionId Position identifier.
-    /// @param newState New Position state.
+    /// @param newState New Position lifecycle state.
     function transition(
         PositionId positionId,
         PositionStateId newState
@@ -141,7 +83,9 @@ contract PositionStateManager {
         }
 
         PositionRuntime memory runtime =
-            registry.getPositionRuntime(positionId);
+            registry.getPositionRuntime(
+                positionId
+            );
 
         PositionStateId currentState =
             runtime.stateId;
@@ -152,14 +96,15 @@ contract PositionStateManager {
                 newState
             )
         ) {
-            revert InvalidStateTransition();
+            revert InvalidPositionState();
         }
 
         runtime.stateId = newState;
 
-        runtime.nonce = PositionNonce.wrap(
-            PositionNonce.unwrap(runtime.nonce) + 1
-        );
+        runtime.nonce =
+            PositionNonce.wrap(
+                PositionNonce.unwrap(runtime.nonce) + 1
+            );
 
         registry.updateRuntime(
             positionId,
@@ -168,22 +113,70 @@ contract PositionStateManager {
     }
 
     //////////////////////////////////////////////////////////////
-    // VALIDATE TRANSITION
+    // READ STATE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position state transition is valid.
-    /// @param currentState Current Position state.
-    /// @param newState Requested Position state.
-    /// @return valid True when transition is permitted.
+    /// @notice Returns the current Position state.
+    function getState(
+        PositionId positionId
+    )
+        external
+        view
+        returns (
+            PositionStateId state
+        )
+    {
+        if (!registry.positionExists(positionId)) {
+            revert PositionNotFound();
+        }
+
+        PositionRuntime memory runtime =
+            registry.getPositionRuntime(
+                positionId
+            );
+
+        return runtime.stateId;
+    }
+
+    //////////////////////////////////////////////////////////////
+    // STATE CHECK
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Checks whether a Position is in a specific state.
+    function isState(
+        PositionId positionId,
+        PositionStateId state
+    )
+        external
+        view
+        returns (bool)
+    {
+        if (!registry.positionExists(positionId)) {
+            return false;
+        }
+
+        PositionRuntime memory runtime =
+            registry.getPositionRuntime(
+                positionId
+            );
+
+        return
+            PositionStateId.unwrap(runtime.stateId)
+            ==
+            PositionStateId.unwrap(state);
+    }
+
+    //////////////////////////////////////////////////////////////
+    // TRANSITION VALIDATION
+    //////////////////////////////////////////////////////////////
+
     function isValidTransition(
         PositionStateId currentState,
         PositionStateId newState
     )
         external
         pure
-        returns (
-            bool valid
-        )
+        returns (bool)
     {
         return _isValidTransition(
             currentState,
@@ -192,7 +185,7 @@ contract PositionStateManager {
     }
 
     //////////////////////////////////////////////////////////////
-    // INTERNAL TRANSITION RULES
+    // INTERNAL TRANSITIONS
     //////////////////////////////////////////////////////////////
 
     function _isValidTransition(
@@ -213,10 +206,7 @@ contract PositionStateManager {
                 newState
             );
 
-        //////////////////////////////////////////////////////////
-        // CREATED → ACTIVE
-        //////////////////////////////////////////////////////////
-
+        // CREATED -> ACTIVE
         if (
             current ==
             PositionStateId.unwrap(
@@ -231,10 +221,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // ACTIVE → LOCKED
-        //////////////////////////////////////////////////////////
-
+        // ACTIVE -> LOCKED
         if (
             current ==
             PositionStateId.unwrap(
@@ -249,10 +236,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // LOCKED → ACTIVE
-        //////////////////////////////////////////////////////////
-
+        // LOCKED -> ACTIVE
         if (
             current ==
             PositionStateId.unwrap(
@@ -267,10 +251,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // ACTIVE → REDEEMED
-        //////////////////////////////////////////////////////////
-
+        // ACTIVE -> REDEEMED
         if (
             current ==
             PositionStateId.unwrap(
@@ -285,10 +266,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // ACTIVE → SETTLED
-        //////////////////////////////////////////////////////////
-
+        // ACTIVE -> SETTLED
         if (
             current ==
             PositionStateId.unwrap(
@@ -303,10 +281,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // REDEEMED → ARCHIVED
-        //////////////////////////////////////////////////////////
-
+        // REDEEMED -> ARCHIVED
         if (
             current ==
             PositionStateId.unwrap(
@@ -321,10 +296,7 @@ contract PositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // SETTLED → ARCHIVED
-        //////////////////////////////////////////////////////////
-
+        // SETTLED -> ARCHIVED
         if (
             current ==
             PositionStateId.unwrap(
@@ -350,9 +322,7 @@ contract PositionStateManager {
         internal
         view
     {
-        if (
-            msg.sender != stateAuthority
-        ) {
+        if (msg.sender != stateAuthority) {
             revert Unauthorized();
         }
     }
