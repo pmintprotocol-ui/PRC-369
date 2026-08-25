@@ -8,20 +8,21 @@ import "./CompositionOperationRegistry.sol";
 
 /// @title PRC-369 Composition State Manager
 /// @author MINTer
-/// @notice Manages the mutable lifecycle state of PRC-369 Compositions.
+/// @notice Manages the lifecycle state of PRC-369 Compositions.
 /// @dev
-/// Runtime component responsible for controlling Composition lifecycle.
+/// This contract manages Composition lifecycle independently
+/// from Position lifecycle.
 ///
 /// It does NOT:
-/// - Execute economic composition.
-/// - Modify EconomicState.
 /// - Modify Position identity.
+/// - Modify Position Runtime.
+/// - Modify EconomicState.
 /// - Transfer assets.
 /// - Execute settlement.
+/// - Execute economic composition.
 ///
-/// CompositionStates defines the canonical state vocabulary.
-/// This contract defines the permitted runtime transitions.
-
+/// CompositionOperationRegistry remains authoritative for
+/// available Composition operations.
 contract CompositionStateManager {
 
     //////////////////////////////////////////////////////////////
@@ -35,13 +36,15 @@ contract CompositionStateManager {
     address public immutable stateAuthority;
 
     /// @notice Current lifecycle state of each Composition.
+    ///
+    /// CompositionStates currently uses PositionStateId as the
+    /// canonical state identifier type.
     mapping(CompositionId => PositionStateId)
         private _states;
 
-    /// @notice Tracks whether a Composition state was initialized.
+    /// @notice Tracks whether a Composition has been initialized.
     mapping(CompositionId => bool)
         private _initialized;
-
 
     //////////////////////////////////////////////////////////////
     // CONSTRUCTOR
@@ -71,12 +74,11 @@ contract CompositionStateManager {
         stateAuthority = authority;
     }
 
-
     //////////////////////////////////////////////////////////////
     // INITIALIZE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Initializes the lifecycle of a Composition.
+    /// @notice Initializes a Composition.
     /// @param compositionId Composition identifier.
     function initializeState(
         CompositionId compositionId
@@ -101,14 +103,13 @@ contract CompositionStateManager {
         _initialized[compositionId] = true;
     }
 
-
     //////////////////////////////////////////////////////////////
     // TRANSITION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Transitions a Composition to a new lifecycle state.
+    /// @notice Transitions a Composition to a new state.
     /// @param compositionId Composition identifier.
-    /// @param newState New lifecycle state.
+    /// @param newState New Composition state.
     function transition(
         CompositionId compositionId,
         PositionStateId newState
@@ -146,14 +147,11 @@ contract CompositionStateManager {
             newState;
     }
 
-
     //////////////////////////////////////////////////////////////
     // READ STATE
     //////////////////////////////////////////////////////////////
 
     /// @notice Returns the current Composition state.
-    /// @param compositionId Composition identifier.
-    /// @return state Current lifecycle state.
     function getState(
         CompositionId compositionId
     )
@@ -172,14 +170,11 @@ contract CompositionStateManager {
         return _states[compositionId];
     }
 
-
     //////////////////////////////////////////////////////////////
     // INITIALIZATION STATUS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Returns whether a Composition state is initialized.
-    /// @param compositionId Composition identifier.
-    /// @return initialized True when initialized.
+    /// @notice Returns whether a Composition is initialized.
     function isInitialized(
         CompositionId compositionId
     )
@@ -190,15 +185,11 @@ contract CompositionStateManager {
         return _initialized[compositionId];
     }
 
-
     //////////////////////////////////////////////////////////////
     // STATE CHECK
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Composition is currently in a state.
-    /// @param compositionId Composition identifier.
-    /// @param state State to check.
-    /// @return matches True when the state matches.
+    /// @notice Checks whether a Composition is in a state.
     function isState(
         CompositionId compositionId,
         PositionStateId state
@@ -223,15 +214,10 @@ contract CompositionStateManager {
             );
     }
 
-
     //////////////////////////////////////////////////////////////
     // TRANSITION VALIDATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a state transition is valid.
-    /// @param currentState Current lifecycle state.
-    /// @param newState Requested lifecycle state.
-    /// @return valid True when transition is permitted.
     function isValidTransition(
         PositionStateId currentState,
         PositionStateId newState
@@ -245,7 +231,6 @@ contract CompositionStateManager {
             newState
         );
     }
-
 
     //////////////////////////////////////////////////////////////
     // INTERNAL TRANSITION RULES
@@ -269,19 +254,14 @@ contract CompositionStateManager {
                 newState
             );
 
-        //////////////////////////////////////////////////////////
-        // CREATED → CONFIGURING
-        //////////////////////////////////////////////////////////
-
+        // CREATED -> CONFIGURING
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.CREATED
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.CONFIGURING
             )
@@ -289,19 +269,14 @@ contract CompositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // CONFIGURING → READY
-        //////////////////////////////////////////////////////////
-
+        // CONFIGURING -> READY
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.CONFIGURING
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.READY
             )
@@ -309,19 +284,14 @@ contract CompositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // CONFIGURING → CANCELLED
-        //////////////////////////////////////////////////////////
-
+        // CONFIGURING -> CANCELLED
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.CONFIGURING
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.CANCELLED
             )
@@ -329,19 +299,14 @@ contract CompositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // READY → EXECUTING
-        //////////////////////////////////////////////////////////
-
+        // READY -> EXECUTING
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.READY
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.EXECUTING
             )
@@ -349,19 +314,14 @@ contract CompositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // EXECUTING → COMPLETED
-        //////////////////////////////////////////////////////////
-
+        // EXECUTING -> COMPLETED
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.EXECUTING
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.COMPLETED
             )
@@ -369,19 +329,14 @@ contract CompositionStateManager {
             return true;
         }
 
-        //////////////////////////////////////////////////////////
-        // EXECUTING → FAILED
-        //////////////////////////////////////////////////////////
-
+        // EXECUTING -> FAILED
         if (
-            current
-            ==
+            current ==
             PositionStateId.unwrap(
                 CompositionStates.EXECUTING
             )
             &&
-            next
-            ==
+            next ==
             PositionStateId.unwrap(
                 CompositionStates.FAILED
             )
@@ -391,7 +346,6 @@ contract CompositionStateManager {
 
         return false;
     }
-
 
     //////////////////////////////////////////////////////////////
     // VALIDATE COMPOSITION
@@ -418,7 +372,6 @@ contract CompositionStateManager {
             revert UnsupportedOperation();
         }
     }
-
 
     //////////////////////////////////////////////////////////////
     // AUTHORIZATION
