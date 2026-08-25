@@ -9,6 +9,12 @@ import "./Types.sol";
 /// @dev
 /// Part of the immutable PRC-369 Kernel.
 ///
+/// Composition lifecycle states are independent from Position lifecycle
+/// states.
+///
+/// PositionStateId belongs to Position.
+/// CompositionStateId belongs to Composition.
+///
 /// DESIGN PRINCIPLES
 /// - No storage
 /// - No functions
@@ -18,8 +24,7 @@ import "./Types.sol";
 /// - No errors
 /// - No business logic
 ///
-/// This library defines only the canonical lifecycle vocabulary.
-/// State transitions are enforced by runtime components.
+/// State transitions are enforced by Runtime components.
 
 library CompositionStates {
 
