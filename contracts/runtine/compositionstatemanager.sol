@@ -57,9 +57,7 @@ contract CompositionStateManager {
     constructor(
         address authority
     ) {
-        if (
-            authority == address(0)
-        ) {
+        if (authority == address(0)) {
             revert ZeroAddress();
         }
 
@@ -84,9 +82,7 @@ contract CompositionStateManager {
             compositionId
         );
 
-        if (
-            _initialized[compositionId]
-        ) {
+        if (_initialized[compositionId]) {
             revert PositionAlreadyRegistered();
         }
 
@@ -111,15 +107,12 @@ contract CompositionStateManager {
     {
         _authorize();
 
-        if (
-            !_initialized[compositionId]
-        ) {
+        if (!_initialized[compositionId]) {
             revert PositionNotFound();
         }
 
         if (
-            CompositionStateId.unwrap(newState)
-            == 0
+            CompositionStateId.unwrap(newState) == 0
         ) {
             revert ZeroValue();
         }
@@ -136,8 +129,7 @@ contract CompositionStateManager {
             revert InvalidStateTransition();
         }
 
-        _states[compositionId] =
-            newState;
+        _states[compositionId] = newState;
     }
 
     //////////////////////////////////////////////////////////////
@@ -156,9 +148,7 @@ contract CompositionStateManager {
             CompositionStateId state
         )
     {
-        if (
-            !_initialized[compositionId]
-        ) {
+        if (!_initialized[compositionId]) {
             revert PositionNotFound();
         }
 
@@ -202,9 +192,7 @@ contract CompositionStateManager {
             bool matches
         )
     {
-        if (
-            !_initialized[compositionId]
-        ) {
+        if (!_initialized[compositionId]) {
             return false;
         }
 
@@ -248,30 +236,19 @@ contract CompositionStateManager {
 
     /// @dev Canonical Composition lifecycle transitions.
     ///
-    /// CREATED
-    ///    |
-    ///    v
-    /// CONFIGURING
-    ///    |
-    ///    v
-    /// READY
-    ///    |
-    ///    v
-    /// EXECUTING
-    ///   / \
-    ///  v   v
-    /// COMPLETED  FAILED
-    ///
+    /// CREATED -> CONFIGURING
+    /// CONFIGURING -> READY
     /// CONFIGURING -> CANCELLED
+    /// READY -> EXECUTING
+    /// EXECUTING -> COMPLETED
+    /// EXECUTING -> FAILED
     function _isValidTransition(
         CompositionStateId currentState,
         CompositionStateId newState
     )
         internal
         pure
-        returns (
-            bool
-        )
+        returns (bool)
     {
         uint256 current =
             CompositionStateId.unwrap(
@@ -421,9 +398,7 @@ contract CompositionStateManager {
         internal
         view
     {
-        if (
-            msg.sender != stateAuthority
-        ) {
+        if (msg.sender != stateAuthority) {
             revert Unauthorized();
         }
     }
