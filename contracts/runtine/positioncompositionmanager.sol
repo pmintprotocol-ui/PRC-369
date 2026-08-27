@@ -6,47 +6,47 @@ import "../kernel/Errors.sol";
 import "../kernel/CapabilityFlags.sol";
 import "../kernel/CompositionTypes.sol";
 import "../kernel/CompositionOperations.sol";
+
 import "./PositionRegistry.sol";
 import "./CapabilityManager.sol";
 import "./CompositionRegistry.sol";
 
 /// @title PRC-369 Position Composition Manager
 /// @author MINTer
-/// @notice Coordinates structural composition operations for Positions.
+/// @notice Validates whether Positions support PRC-369 Composition operations.
 /// @dev
-/// This first implementation validates composition permissions and
-/// operation availability without performing economic transformations.
+/// Runtime component responsible for validating the participation of
+/// Positions in Composition operations.
 ///
-/// It does NOT:
-/// - Modify EconomicState.
+/// This contract does NOT:
+/// - Define Position identity.
+/// - Define Composition identity.
+/// - Store Position runtime.
+/// - Store Composition state.
+/// - Execute economic settlement.
 /// - Transfer assets.
-/// - Calculate economic values.
 /// - Create or destroy economic value.
-/// - Execute settlement.
-/// - Modify Position identity.
+/// - Modify Position capabilities.
+/// - Modify Position lifecycle state.
 ///
-/// Economic composition rules will be introduced by later runtime layers.
-
+/// Composition semantics are defined by the Kernel.
+/// Runtime components enforce those semantics.
 contract PositionCompositionManager {
 
     //////////////////////////////////////////////////////////////
     // REGISTRIES
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authoritative Position Registry.
     PositionRegistry public immutable positionRegistry;
 
-    /// @notice Capability Manager.
     CapabilityManager public immutable capabilityManager;
 
-    /// @notice Composition Registry.
     CompositionRegistry public immutable compositionRegistry;
 
     //////////////////////////////////////////////////////////////
     // AUTHORITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authority allowed to execute composition operations.
     address public immutable compositionAuthority;
 
     //////////////////////////////////////////////////////////////
@@ -79,10 +79,14 @@ contract PositionCompositionManager {
             PositionRegistry(registryAddress);
 
         capabilityManager =
-            CapabilityManager(capabilityManagerAddress);
+            CapabilityManager(
+                capabilityManagerAddress
+            );
 
         compositionRegistry =
-            CompositionRegistry(compositionRegistryAddress);
+            CompositionRegistry(
+                compositionRegistryAddress
+            );
 
         compositionAuthority =
             authority;
@@ -92,9 +96,6 @@ contract PositionCompositionManager {
     // SPLIT SUPPORT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position can participate in a split.
-    /// @param positionId Position identifier.
-    /// @return supported True if split is currently supported.
     function supportsSplit(
         PositionId positionId
     )
@@ -102,35 +103,13 @@ contract PositionCompositionManager {
         view
         returns (bool supported)
     {
-        if (
-            PositionId.unwrap(positionId)
-            == 0
-        ) {
-            return false;
-        }
-
-        if (
-            !compositionRegistry.isActive(
-                CompositionOperations.SPLIT
-            )
-        ) {
-            return false;
-        }
-
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.SPLITTABLE
-            );
+        return _supportsSplit(positionId);
     }
 
     //////////////////////////////////////////////////////////////
     // MERGE SUPPORT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position can participate in a merge.
-    /// @param positionId Position identifier.
-    /// @return supported True if merge is currently supported.
     function supportsMerge(
         PositionId positionId
     )
@@ -138,35 +117,13 @@ contract PositionCompositionManager {
         view
         returns (bool supported)
     {
-        if (
-            PositionId.unwrap(positionId)
-            == 0
-        ) {
-            return false;
-        }
-
-        if (
-            !compositionRegistry.isActive(
-                CompositionOperations.MERGE
-            )
-        ) {
-            return false;
-        }
-
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.MERGEABLE
-            );
+        return _supportsMerge(positionId);
     }
 
     //////////////////////////////////////////////////////////////
     // COMPOSE SUPPORT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Position can participate in composition.
-    /// @param positionId Position identifier.
-    /// @return supported True if composition is currently supported.
     function supportsComposition(
         PositionId positionId
     )
@@ -174,34 +131,31 @@ contract PositionCompositionManager {
         view
         returns (bool supported)
     {
-        if (
-            PositionId.unwrap(positionId)
-            == 0
-        ) {
-            return false;
-        }
+        return _supportsComposition(positionId);
+    }
 
-        if (
-            !compositionRegistry.isActive(
-                CompositionOperations.COMPOSE
-            )
-        ) {
-            return false;
-        }
+    //////////////////////////////////////////////////////////////
+    // GENERAL OPERATION SUPPORT
+    //////////////////////////////////////////////////////////////
 
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.COMPOSABLE
-            );
+    function supportsOperation(
+        PositionId positionId,
+        CompositionOperationId operation
+    )
+        external
+        view
+        returns (bool supported)
+    {
+        return _supportsOperation(
+            positionId,
+            operation
+        );
     }
 
     //////////////////////////////////////////////////////////////
     // VALIDATE SPLIT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates that a Position may be split.
-    /// @param positionId Position identifier.
     function validateSplit(
         PositionId positionId
     )
@@ -209,11 +163,7 @@ contract PositionCompositionManager {
         view
         returns (bool valid)
     {
-        if (
-            !supportsSplitInternal(
-                positionId
-            )
-        ) {
+        if (!_supportsSplit(positionId)) {
             revert UnsupportedOperation();
         }
 
@@ -224,8 +174,6 @@ contract PositionCompositionManager {
     // VALIDATE MERGE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates that a Position may participate in a merge.
-    /// @param positionId Position identifier.
     function validateMerge(
         PositionId positionId
     )
@@ -233,11 +181,7 @@ contract PositionCompositionManager {
         view
         returns (bool valid)
     {
-        if (
-            !supportsMergeInternal(
-                positionId
-            )
-        ) {
+        if (!_supportsMerge(positionId)) {
             revert UnsupportedOperation();
         }
 
@@ -245,11 +189,9 @@ contract PositionCompositionManager {
     }
 
     //////////////////////////////////////////////////////////////
-    // VALIDATE COMPOSITION
+    // VALIDATE COMPOSE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates that a Position may participate in composition.
-    /// @param positionId Position identifier.
     function validateComposition(
         PositionId positionId
     )
@@ -257,9 +199,29 @@ contract PositionCompositionManager {
         view
         returns (bool valid)
     {
+        if (!_supportsComposition(positionId)) {
+            revert UnsupportedOperation();
+        }
+
+        return true;
+    }
+
+    //////////////////////////////////////////////////////////////
+    // VALIDATE GENERAL OPERATION
+    //////////////////////////////////////////////////////////////
+
+    function validateOperation(
+        PositionId positionId,
+        CompositionOperationId operation
+    )
+        external
+        view
+        returns (bool valid)
+    {
         if (
-            !supportsCompositionInternal(
-                positionId
+            !_supportsOperation(
+                positionId,
+                operation
             )
         ) {
             revert UnsupportedOperation();
@@ -269,10 +231,105 @@ contract PositionCompositionManager {
     }
 
     //////////////////////////////////////////////////////////////
-    // INTERNAL SUPPORT CHECKS
+    // INTERNAL GENERAL OPERATION CHECK
     //////////////////////////////////////////////////////////////
 
-    function supportsSplitInternal(
+    function _supportsOperation(
+        PositionId positionId,
+        CompositionOperationId operation
+    )
+        internal
+        view
+        returns (bool)
+    {
+        if (
+            PositionId.unwrap(positionId) == 0
+        ) {
+            return false;
+        }
+
+        if (
+            !positionRegistry.positionExists(
+                positionId
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            CompositionOperationId.unwrap(operation)
+            == bytes32(0)
+        ) {
+            return false;
+        }
+
+        if (
+            !compositionRegistry.isActive(
+                operation
+            )
+        ) {
+            return false;
+        }
+
+        //////////////////////////////////////////////////////////
+        // SPLIT
+        //////////////////////////////////////////////////////////
+
+        if (
+            CompositionOperationId.unwrap(operation)
+            ==
+            CompositionOperationId.unwrap(
+                CompositionOperations.SPLIT
+            )
+        ) {
+            return capabilityManager.hasCapability(
+                positionId,
+                CapabilityFlags.SPLITTABLE
+            );
+        }
+
+        //////////////////////////////////////////////////////////
+        // MERGE
+        //////////////////////////////////////////////////////////
+
+        if (
+            CompositionOperationId.unwrap(operation)
+            ==
+            CompositionOperationId.unwrap(
+                CompositionOperations.MERGE
+            )
+        ) {
+            return capabilityManager.hasCapability(
+                positionId,
+                CapabilityFlags.MERGEABLE
+            );
+        }
+
+        //////////////////////////////////////////////////////////
+        // COMPOSE
+        //////////////////////////////////////////////////////////
+
+        if (
+            CompositionOperationId.unwrap(operation)
+            ==
+            CompositionOperationId.unwrap(
+                CompositionOperations.COMPOSE
+            )
+        ) {
+            return capabilityManager.hasCapability(
+                positionId,
+                CapabilityFlags.COMPOSABLE
+            );
+        }
+
+        return false;
+    }
+
+    //////////////////////////////////////////////////////////////
+    // INTERNAL SPLIT CHECK
+    //////////////////////////////////////////////////////////////
+
+    function _supportsSplit(
         PositionId positionId
     )
         internal
@@ -280,8 +337,15 @@ contract PositionCompositionManager {
         returns (bool)
     {
         if (
-            PositionId.unwrap(positionId)
-            == 0
+            PositionId.unwrap(positionId) == 0
+        ) {
+            return false;
+        }
+
+        if (
+            !positionRegistry.positionExists(
+                positionId
+            )
         ) {
             return false;
         }
@@ -294,14 +358,17 @@ contract PositionCompositionManager {
             return false;
         }
 
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.SPLITTABLE
-            );
+        return capabilityManager.hasCapability(
+            positionId,
+            CapabilityFlags.SPLITTABLE
+        );
     }
 
-    function supportsMergeInternal(
+    //////////////////////////////////////////////////////////////
+    // INTERNAL MERGE CHECK
+    //////////////////////////////////////////////////////////////
+
+    function _supportsMerge(
         PositionId positionId
     )
         internal
@@ -309,8 +376,15 @@ contract PositionCompositionManager {
         returns (bool)
     {
         if (
-            PositionId.unwrap(positionId)
-            == 0
+            PositionId.unwrap(positionId) == 0
+        ) {
+            return false;
+        }
+
+        if (
+            !positionRegistry.positionExists(
+                positionId
+            )
         ) {
             return false;
         }
@@ -323,14 +397,17 @@ contract PositionCompositionManager {
             return false;
         }
 
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.MERGEABLE
-            );
+        return capabilityManager.hasCapability(
+            positionId,
+            CapabilityFlags.MERGEABLE
+        );
     }
 
-    function supportsCompositionInternal(
+    //////////////////////////////////////////////////////////////
+    // INTERNAL COMPOSE CHECK
+    //////////////////////////////////////////////////////////////
+
+    function _supportsComposition(
         PositionId positionId
     )
         internal
@@ -338,8 +415,15 @@ contract PositionCompositionManager {
         returns (bool)
     {
         if (
-            PositionId.unwrap(positionId)
-            == 0
+            PositionId.unwrap(positionId) == 0
+        ) {
+            return false;
+        }
+
+        if (
+            !positionRegistry.positionExists(
+                positionId
+            )
         ) {
             return false;
         }
@@ -352,10 +436,9 @@ contract PositionCompositionManager {
             return false;
         }
 
-        return
-            capabilityManager.hasCapability(
-                positionId,
-                CapabilityFlags.COMPOSABLE
-            );
+        return capabilityManager.hasCapability(
+            positionId,
+            CapabilityFlags.COMPOSABLE
+        );
     }
 }
