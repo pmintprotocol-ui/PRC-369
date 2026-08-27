@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "./Types.sol";
+import "./CompositionTypes.sol";
 
 /// @title PRC-369 Composition States
 /// @author MINTer
