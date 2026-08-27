@@ -1,28 +1,44 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "../kernel/Types.sol";
-import "../kernel/Errors.sol";
 import "../kernel/CompositionTypes.sol";
 import "../kernel/CompositionOperations.sol";
+import "../kernel/Errors.sol";
 import "./CompositionRegistry.sol";
 
 /// @title PRC-369 Composition Operation Registry
 /// @author MINTer
 /// @notice Registers concrete composition operations involving Positions.
 /// @dev
-/// This registry records the existence and lifecycle of composition
-/// operations.
+/// This registry records the existence and lifecycle of concrete
+/// Composition operations.
 ///
-/// It does NOT:
+/// Architecture:
+///
+/// CompositionRegistry
+///      │
+///      │ supported operation types
+///      ▼
+/// CompositionOperationRegistry
+///      │
+///      │ concrete Composition operation
+///      ▼
+/// CompositionStateManager
+///      │
+///      │ lifecycle state
+///      ▼
+/// Composition Runtime
+///
+/// This contract does NOT:
 /// - Execute composition.
 /// - Modify Positions.
 /// - Modify EconomicState.
 /// - Transfer assets.
 /// - Calculate economic values.
 /// - Create or destroy Positions.
+/// - Manage Composition lifecycle state.
 ///
-/// Execution remains the responsibility of runtime controllers.
+/// Execution remains the responsibility of Runtime controllers.
 
 contract CompositionOperationRegistry {
 
@@ -30,14 +46,14 @@ contract CompositionOperationRegistry {
     // STORAGE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Composition operation metadata.
+    /// @notice Concrete Composition operation metadata.
     struct CompositionOperation {
         CompositionOperationId operation;
         bool active;
         bool exists;
     }
 
-    /// @notice Registered composition operations.
+    /// @notice Registered concrete Composition operations.
     mapping(CompositionId => CompositionOperation)
         private _operations;
 
@@ -45,34 +61,45 @@ contract CompositionOperationRegistry {
     // REGISTRY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Registry controlling supported operation types.
+    /// @notice Registry controlling supported Composition operation
+    ///         types.
     CompositionRegistry public immutable compositionRegistry;
 
     //////////////////////////////////////////////////////////////
     // AUTHORITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authority allowed to register composition operations.
+    /// @notice Authority allowed to manage concrete Composition
+    ///         operations.
     address public immutable operationAuthority;
 
     //////////////////////////////////////////////////////////////
     // CONSTRUCTOR
     //////////////////////////////////////////////////////////////
 
+    /// @notice Initializes the Composition Operation Registry.
+    /// @param registryAddress Composition operation-type Registry.
+    /// @param authority Authority allowed to manage operations.
     constructor(
         address registryAddress,
         address authority
     ) {
-        if (registryAddress == address(0)) {
+        if (
+            registryAddress == address(0)
+        ) {
             revert ZeroAddress();
         }
 
-        if (authority == address(0)) {
+        if (
+            authority == address(0)
+        ) {
             revert ZeroAddress();
         }
 
         compositionRegistry =
-            CompositionRegistry(registryAddress);
+            CompositionRegistry(
+                registryAddress
+            );
 
         operationAuthority =
             authority;
@@ -82,8 +109,8 @@ contract CompositionOperationRegistry {
     // REGISTER OPERATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Registers a concrete composition operation.
-    /// @param compositionId Unique composition identifier.
+    /// @notice Registers a concrete operation for a Composition.
+    /// @param compositionId Unique Composition identifier.
     /// @param operation Composition operation type.
     function registerOperation(
         CompositionId compositionId,
@@ -107,12 +134,16 @@ contract CompositionOperationRegistry {
             revert ZeroValue();
         }
 
-        if (_operations[compositionId].exists) {
+        if (
+            _operations[compositionId].exists
+        ) {
             revert PositionAlreadyRegistered();
         }
 
         if (
-            !compositionRegistry.isActive(operation)
+            !compositionRegistry.isActive(
+                operation
+            )
         ) {
             revert UnsupportedOperation();
         }
@@ -129,7 +160,7 @@ contract CompositionOperationRegistry {
     // ACTIVATE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Activates a registered composition operation.
+    /// @notice Activates a registered Composition operation.
     /// @param compositionId Composition identifier.
     function activateOperation(
         CompositionId compositionId
@@ -138,7 +169,9 @@ contract CompositionOperationRegistry {
     {
         _authorize();
 
-        if (!_operations[compositionId].exists) {
+        if (
+            !_operations[compositionId].exists
+        ) {
             revert PositionNotFound();
         }
 
@@ -160,7 +193,7 @@ contract CompositionOperationRegistry {
     // DEACTIVATE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Deactivates a registered composition operation.
+    /// @notice Deactivates a registered Composition operation.
     /// @param compositionId Composition identifier.
     function deactivateOperation(
         CompositionId compositionId
@@ -169,7 +202,9 @@ contract CompositionOperationRegistry {
     {
         _authorize();
 
-        if (!_operations[compositionId].exists) {
+        if (
+            !_operations[compositionId].exists
+        ) {
             revert PositionNotFound();
         }
 
@@ -177,12 +212,12 @@ contract CompositionOperationRegistry {
     }
 
     //////////////////////////////////////////////////////////////
-    // RESOLVE
+    // RESOLVE OPERATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Resolves an active composition operation.
+    /// @notice Resolves the active operation of a Composition.
     /// @param compositionId Composition identifier.
-    /// @return operation Composition operation type.
+    /// @return operation Registered Composition operation type.
     function resolveOperation(
         CompositionId compositionId
     )
@@ -202,11 +237,15 @@ contract CompositionOperationRegistry {
         CompositionOperation memory composition =
             _operations[compositionId];
 
-        if (!composition.exists) {
+        if (
+            !composition.exists
+        ) {
             revert UnsupportedOperation();
         }
 
-        if (!composition.active) {
+        if (
+            !composition.active
+        ) {
             revert UnsupportedOperation();
         }
 
@@ -225,32 +264,37 @@ contract CompositionOperationRegistry {
     // EXISTENCE CHECK
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a composition operation exists.
+    /// @notice Checks whether a Composition operation exists.
     /// @param compositionId Composition identifier.
-    /// @return exists True if registered.
+    /// @return exists True when registered.
     function exists(
         CompositionId compositionId
     )
         external
         view
-        returns (bool)
+        returns (
+            bool
+        )
     {
-        return _operations[compositionId].exists;
+        return
+            _operations[compositionId].exists;
     }
 
     //////////////////////////////////////////////////////////////
     // ACTIVE CHECK
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a composition operation is active.
+    /// @notice Checks whether a Composition operation is active.
     /// @param compositionId Composition identifier.
-    /// @return active True if active.
+    /// @return active True when active.
     function isActive(
         CompositionId compositionId
     )
         external
         view
-        returns (bool)
+        returns (
+            bool
+        )
     {
         return
             _operations[compositionId].exists &&
@@ -261,7 +305,7 @@ contract CompositionOperationRegistry {
     // OPERATION TYPE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Returns the operation type of a composition.
+    /// @notice Returns the operation type assigned to a Composition.
     /// @param compositionId Composition identifier.
     /// @return operation Composition operation type.
     function getOperationType(
@@ -273,11 +317,14 @@ contract CompositionOperationRegistry {
             CompositionOperationId operation
         )
     {
-        if (!_operations[compositionId].exists) {
+        if (
+            !_operations[compositionId].exists
+        ) {
             revert PositionNotFound();
         }
 
-        return _operations[compositionId].operation;
+        return
+            _operations[compositionId].operation;
     }
 
     //////////////////////////////////////////////////////////////
@@ -289,7 +336,9 @@ contract CompositionOperationRegistry {
         internal
         view
     {
-        if (msg.sender != operationAuthority) {
+        if (
+            msg.sender != operationAuthority
+        ) {
             revert Unauthorized();
         }
     }
