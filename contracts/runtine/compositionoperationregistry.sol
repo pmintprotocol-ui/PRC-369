@@ -10,24 +10,8 @@ import "./CompositionRegistry.sol";
 /// @author MINTer
 /// @notice Registers concrete composition operations involving Positions.
 /// @dev
-/// This registry records the existence and lifecycle of concrete
-/// Composition operations.
-///
-/// Architecture:
-///
-/// CompositionRegistry
-///      │
-///      │ supported operation types
-///      ▼
-/// CompositionOperationRegistry
-///      │
-///      │ concrete Composition operation
-///      ▼
-/// CompositionStateManager
-///      │
-///      │ lifecycle state
-///      ▼
-/// Composition Runtime
+/// CompositionId identifies one concrete Composition.
+/// CompositionOperationId identifies the operation type.
 ///
 /// This contract does NOT:
 /// - Execute composition.
@@ -53,7 +37,7 @@ contract CompositionOperationRegistry {
         bool exists;
     }
 
-    /// @notice Registered concrete Composition operations.
+    /// @notice Concrete Composition operations.
     mapping(CompositionId => CompositionOperation)
         private _operations;
 
@@ -61,38 +45,29 @@ contract CompositionOperationRegistry {
     // REGISTRY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Registry controlling supported Composition operation
-    ///         types.
+    /// @notice Registry of supported Composition operation types.
     CompositionRegistry public immutable compositionRegistry;
 
     //////////////////////////////////////////////////////////////
     // AUTHORITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authority allowed to manage concrete Composition
-    ///         operations.
+    /// @notice Authority allowed to manage concrete operations.
     address public immutable operationAuthority;
 
     //////////////////////////////////////////////////////////////
     // CONSTRUCTOR
     //////////////////////////////////////////////////////////////
 
-    /// @notice Initializes the Composition Operation Registry.
-    /// @param registryAddress Composition operation-type Registry.
-    /// @param authority Authority allowed to manage operations.
     constructor(
         address registryAddress,
         address authority
     ) {
-        if (
-            registryAddress == address(0)
-        ) {
+        if (registryAddress == address(0)) {
             revert ZeroAddress();
         }
 
-        if (
-            authority == address(0)
-        ) {
+        if (authority == address(0)) {
             revert ZeroAddress();
         }
 
@@ -120,19 +95,13 @@ contract CompositionOperationRegistry {
     {
         _authorize();
 
-        if (
-            CompositionId.unwrap(compositionId)
-            == bytes32(0)
-        ) {
-            revert ZeroValue();
-        }
+        _validateCompositionId(
+            compositionId
+        );
 
-        if (
-            CompositionOperationId.unwrap(operation)
-            == bytes32(0)
-        ) {
-            revert ZeroValue();
-        }
+        _validateOperationId(
+            operation
+        );
 
         if (
             _operations[compositionId].exists
@@ -157,7 +126,7 @@ contract CompositionOperationRegistry {
     }
 
     //////////////////////////////////////////////////////////////
-    // ACTIVATE
+    // ACTIVATE OPERATION
     //////////////////////////////////////////////////////////////
 
     /// @notice Activates a registered Composition operation.
@@ -190,7 +159,7 @@ contract CompositionOperationRegistry {
     }
 
     //////////////////////////////////////////////////////////////
-    // DEACTIVATE
+    // DEACTIVATE OPERATION
     //////////////////////////////////////////////////////////////
 
     /// @notice Deactivates a registered Composition operation.
@@ -215,7 +184,7 @@ contract CompositionOperationRegistry {
     // RESOLVE OPERATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Resolves the active operation of a Composition.
+    /// @notice Resolves the active operation type of a Composition.
     /// @param compositionId Composition identifier.
     /// @return operation Registered Composition operation type.
     function resolveOperation(
@@ -227,12 +196,9 @@ contract CompositionOperationRegistry {
             CompositionOperationId operation
         )
     {
-        if (
-            CompositionId.unwrap(compositionId)
-            == bytes32(0)
-        ) {
-            revert ZeroValue();
-        }
+        _validateCompositionId(
+            compositionId
+        );
 
         CompositionOperation memory composition =
             _operations[compositionId];
@@ -328,10 +294,82 @@ contract CompositionOperationRegistry {
     }
 
     //////////////////////////////////////////////////////////////
+    // OPERATION TYPE CHECK
+    //////////////////////////////////////////////////////////////
+
+    /// @notice Checks whether a Composition has a specific operation.
+    /// @param compositionId Composition identifier.
+    /// @param operation Operation type being checked.
+    /// @return matches True when the operation matches.
+    function isOperationType(
+        CompositionId compositionId,
+        CompositionOperationId operation
+    )
+        external
+        view
+        returns (
+            bool matches
+        )
+    {
+        if (
+            !_operations[compositionId].exists
+        ) {
+            return false;
+        }
+
+        if (
+            CompositionOperationId.unwrap(operation)
+            == bytes32(0)
+        ) {
+            return false;
+        }
+
+        return
+            CompositionOperationId.unwrap(
+                _operations[compositionId].operation
+            )
+            ==
+            CompositionOperationId.unwrap(
+                operation
+            );
+    }
+
+    //////////////////////////////////////////////////////////////
+    // INTERNAL VALIDATION
+    //////////////////////////////////////////////////////////////
+
+    function _validateCompositionId(
+        CompositionId compositionId
+    )
+        internal
+        pure
+    {
+        if (
+            CompositionId.unwrap(compositionId)
+            == bytes32(0)
+        ) {
+            revert ZeroValue();
+        }
+    }
+
+    function _validateOperationId(
+        CompositionOperationId operation
+    )
+        internal
+        pure
+    {
+        if (
+            CompositionOperationId.unwrap(operation)
+            == bytes32(0)
+        ) {
+            revert ZeroValue();
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
     // AUTHORIZATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates operation registry authority.
     function _authorize()
         internal
         view
