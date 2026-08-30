@@ -50,16 +50,12 @@ contract CompositionExecutionManager {
     // RUNTIME COMPONENTS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Validates whether a Composition is structurally
-    ///         ready for execution.
     CompositionValidationManager public immutable
         validationManager;
 
-    /// @notice Manages the lifecycle state of Compositions.
     CompositionStateManager public immutable
         stateManager;
 
-    /// @notice Resolves the operation assigned to a Composition.
     CompositionOperationRegistry public immutable
         operationRegistry;
 
@@ -67,18 +63,15 @@ contract CompositionExecutionManager {
     // AUTHORITY
     //////////////////////////////////////////////////////////////
 
-    /// @notice Authority allowed to coordinate execution lifecycle.
     address public immutable executionAuthority;
 
     //////////////////////////////////////////////////////////////
     // EXECUTION TRACKING
     //////////////////////////////////////////////////////////////
 
-    /// @notice Tracks whether execution has been started.
     mapping(CompositionId => bool)
         private _executionStarted;
 
-    /// @notice Tracks whether execution has completed.
     mapping(CompositionId => bool)
         private _executionCompleted;
 
@@ -86,11 +79,6 @@ contract CompositionExecutionManager {
     // CONSTRUCTOR
     //////////////////////////////////////////////////////////////
 
-    /// @notice Initializes the Composition Execution Manager.
-    /// @param validationManagerAddress Composition validation manager.
-    /// @param stateManagerAddress Composition state manager.
-    /// @param operationRegistryAddress Composition operation registry.
-    /// @param authority Execution authority.
     constructor(
         address validationManagerAddress,
         address stateManagerAddress,
@@ -148,18 +136,6 @@ contract CompositionExecutionManager {
     // START EXECUTION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Moves a valid Composition from READY to EXECUTING.
-    /// @dev
-    /// This function does not perform the economic operation.
-    ///
-    /// Required conditions:
-    /// 1. Composition is structurally valid.
-    /// 2. All participants support the operation.
-    /// 3. Operation is active.
-    /// 4. Composition is in READY state.
-    /// 5. Execution has not already started.
-    ///
-    /// @param compositionId Composition identifier.
     function beginExecution(
         CompositionId compositionId
     )
@@ -197,12 +173,6 @@ contract CompositionExecutionManager {
     // COMPLETE EXECUTION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Marks an executing Composition as COMPLETED.
-    /// @dev
-    /// This function only coordinates lifecycle state.
-    /// It does not perform the economic execution itself.
-    ///
-    /// @param compositionId Composition identifier.
     function completeExecution(
         CompositionId compositionId
     )
@@ -247,12 +217,6 @@ contract CompositionExecutionManager {
     // FAIL EXECUTION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Marks an executing Composition as FAILED.
-    /// @dev
-    /// This function only coordinates lifecycle state.
-    /// It does not perform rollback or settlement.
-    ///
-    /// @param compositionId Composition identifier.
     function failExecution(
         CompositionId compositionId
     )
@@ -297,9 +261,6 @@ contract CompositionExecutionManager {
     // EXECUTION STATUS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether execution has started.
-    /// @param compositionId Composition identifier.
-    /// @return started True when execution has started.
     function executionStarted(
         CompositionId compositionId
     )
@@ -318,9 +279,6 @@ contract CompositionExecutionManager {
     // COMPLETION STATUS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether execution has completed.
-    /// @param compositionId Composition identifier.
-    /// @return completed True when execution reached a terminal state.
     function executionCompleted(
         CompositionId compositionId
     )
@@ -339,9 +297,6 @@ contract CompositionExecutionManager {
     // OPERATION
     //////////////////////////////////////////////////////////////
 
-    /// @notice Returns the operation assigned to the Composition.
-    /// @param compositionId Composition identifier.
-    /// @return operation Composition operation type.
     function getExecutionOperation(
         CompositionId compositionId
     )
@@ -373,9 +328,6 @@ contract CompositionExecutionManager {
     // READY CHECK
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Composition can begin execution.
-    /// @param compositionId Composition identifier.
-    /// @return ready True when ready.
     function isReadyForExecution(
         CompositionId compositionId
     )
@@ -412,7 +364,6 @@ contract CompositionExecutionManager {
     // INTERNAL READY VALIDATION
     //////////////////////////////////////////////////////////////
 
-    /// @dev Performs the complete pre-execution validation.
     function _validateReadyComposition(
         CompositionId compositionId
     )
