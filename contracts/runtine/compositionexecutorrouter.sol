@@ -8,14 +8,12 @@ import "../kernel/Errors.sol";
 
 import "./CompositionOperationRegistry.sol";
 import "./CompositionStateManager.sol";
-import "./CompositionExecutionManager.sol";
 
 /// @title PRC-369 Composition Executor Router
 /// @author MINTer
-/// @notice Resolves which execution path corresponds to a
-///         PRC-369 Composition.
+/// @notice Resolves the execution path associated with a Composition.
 /// @dev
-/// This contract is a routing layer only.
+/// This contract is a pure routing and validation layer.
 ///
 /// It does NOT:
 /// - Execute SPLIT.
@@ -32,11 +30,10 @@ import "./CompositionExecutionManager.sol";
 /// - Create economic value.
 /// - Destroy economic value.
 ///
-/// Its responsibility is ONLY to determine the execution
-/// path associated with the Composition operation.
+/// Its sole responsibility is to resolve the operation type of a
+/// Composition into its corresponding execution path.
 ///
-/// Execution remains the responsibility of dedicated
-/// operation executors.
+/// Dedicated execution contracts remain responsible for execution.
 
 contract CompositionExecutorRouter {
 
@@ -49,31 +46,14 @@ contract CompositionExecutorRouter {
     CompositionOperationRegistry public immutable
         operationRegistry;
 
-    /// @notice Manager responsible for Composition lifecycle.
+    /// @notice Manager responsible for Composition lifecycle state.
     CompositionStateManager public immutable
         stateManager;
-
-    /// @notice Manager responsible for beginning execution.
-    CompositionExecutionManager public immutable
-        executionManager;
-
-    //////////////////////////////////////////////////////////////
-    // AUTHORITY
-    //////////////////////////////////////////////////////////////
-
-    /// @notice Authority allowed to resolve execution paths.
-    address public immutable routerAuthority;
 
     //////////////////////////////////////////////////////////////
     // EXECUTION PATH IDENTIFIERS
     //////////////////////////////////////////////////////////////
 
-    /// @notice Execution path identifiers.
-    ///
-    /// NONE
-    /// SPLIT
-    /// MERGE
-    /// COMPOSE
     bytes32 public constant PATH_NONE =
         bytes32(0);
 
@@ -90,16 +70,9 @@ contract CompositionExecutorRouter {
     // CONSTRUCTOR
     //////////////////////////////////////////////////////////////
 
-    /// @notice Initializes the Executor Router.
-    /// @param operationRegistryAddress Composition operation registry.
-    /// @param stateManagerAddress Composition state manager.
-    /// @param executionManagerAddress Composition execution manager.
-    /// @param authority Router authority.
     constructor(
         address operationRegistryAddress,
-        address stateManagerAddress,
-        address executionManagerAddress,
-        address authority
+        address stateManagerAddress
     ) {
         if (
             operationRegistryAddress ==
@@ -115,20 +88,6 @@ contract CompositionExecutorRouter {
             revert ZeroAddress();
         }
 
-        if (
-            executionManagerAddress ==
-            address(0)
-        ) {
-            revert ZeroAddress();
-        }
-
-        if (
-            authority ==
-            address(0)
-        ) {
-            revert ZeroAddress();
-        }
-
         operationRegistry =
             CompositionOperationRegistry(
                 operationRegistryAddress
@@ -138,14 +97,6 @@ contract CompositionExecutorRouter {
             CompositionStateManager(
                 stateManagerAddress
             );
-
-        executionManager =
-            CompositionExecutionManager(
-                executionManagerAddress
-            );
-
-        routerAuthority =
-            authority;
     }
 
     //////////////////////////////////////////////////////////////
@@ -155,15 +106,10 @@ contract CompositionExecutorRouter {
     /// @notice Resolves the execution path of a Composition.
     /// @dev
     /// The Composition must:
-    /// 1. Exist in the operation registry.
-    /// 2. Have an active operation.
-    /// 3. Be initialized.
-    /// 4. Be in EXECUTING state.
-    ///
-    /// No state is modified.
-    ///
-    /// @param compositionId Composition identifier.
-    /// @return path Execution path identifier.
+    /// - exist;
+    /// - have an active operation;
+    /// - have initialized lifecycle state;
+    /// - be in EXECUTING state.
     function resolvePath(
         CompositionId compositionId
     )
@@ -210,13 +156,10 @@ contract CompositionExecutorRouter {
             revert InvalidStateTransition();
         }
 
-        CompositionOperationId operation =
+        return _resolveOperationPath(
             operationRegistry.getOperationType(
                 compositionId
-            );
-
-        return _resolveOperationPath(
-            operation
+            )
         );
     }
 
@@ -224,11 +167,6 @@ contract CompositionExecutorRouter {
     // CHECK PATH
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether a Composition resolves to a
-    ///         specific execution path.
-    /// @param compositionId Composition identifier.
-    /// @param expectedPath Expected execution path.
-    /// @return matches True when the path matches.
     function isPath(
         CompositionId compositionId,
         bytes32 expectedPath
@@ -236,7 +174,7 @@ contract CompositionExecutorRouter {
         external
         view
         returns (
-            bool matches
+            bool
         )
     {
         if (
@@ -286,33 +224,28 @@ contract CompositionExecutorRouter {
             return false;
         }
 
-        CompositionOperationId operation =
-            operationRegistry.getOperationType(
-                compositionId
-            );
-
         return
             _resolveOperationPath(
-                operation
-            ) == expectedPath;
+                operationRegistry.getOperationType(
+                    compositionId
+                )
+            )
+            ==
+            expectedPath;
     }
 
     //////////////////////////////////////////////////////////////
     // OPERATION PATH
     //////////////////////////////////////////////////////////////
 
-    /// @notice Resolves an operation type without requiring
-    ///         a Composition.
-    /// @param operation Composition operation type.
-    /// @return path Corresponding execution path.
-  function resolveOperationPath(
-    CompositionOperationId operation
-)
-    external
-    pure
-    returns (
-        bytes32 path
+    function resolveOperationPath(
+        CompositionOperationId operation
     )
+        external
+        pure
+        returns (
+            bytes32 path
+        )
     {
         if (
             CompositionOperationId.unwrap(
@@ -328,19 +261,16 @@ contract CompositionExecutorRouter {
     }
 
     //////////////////////////////////////////////////////////////
-    // SPLIT CHECK
+    // SPLIT
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether the Composition is routed to SPLIT.
-    /// @param compositionId Composition identifier.
-    /// @return split True when routed to SPLIT.
     function isSplit(
         CompositionId compositionId
     )
         external
         view
         returns (
-            bool split
+            bool
         )
     {
         return
@@ -351,19 +281,16 @@ contract CompositionExecutorRouter {
     }
 
     //////////////////////////////////////////////////////////////
-    // MERGE CHECK
+    // MERGE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether the Composition is routed to MERGE.
-    /// @param compositionId Composition identifier.
-    /// @return merge True when routed to MERGE.
     function isMerge(
         CompositionId compositionId
     )
         external
         view
         returns (
-            bool merge
+            bool
         )
     {
         return
@@ -374,19 +301,16 @@ contract CompositionExecutorRouter {
     }
 
     //////////////////////////////////////////////////////////////
-    // COMPOSE CHECK
+    // COMPOSE
     //////////////////////////////////////////////////////////////
 
-    /// @notice Checks whether the Composition is routed to COMPOSE.
-    /// @param compositionId Composition identifier.
-    /// @return compose True when routed to COMPOSE.
     function isCompose(
         CompositionId compositionId
     )
         external
         view
         returns (
-            bool compose
+            bool
         )
     {
         return
@@ -464,22 +388,6 @@ contract CompositionExecutorRouter {
             ) == bytes32(0)
         ) {
             revert ZeroValue();
-        }
-    }
-
-    //////////////////////////////////////////////////////////////
-    // AUTHORIZATION
-    //////////////////////////////////////////////////////////////
-
-    function _authorize()
-        internal
-        view
-    {
-        if (
-            msg.sender !=
-            routerAuthority
-        ) {
-            revert Unauthorized();
         }
     }
 }
