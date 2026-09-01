@@ -7,7 +7,7 @@ import "../kernel/CompositionTypes.sol";
 
 import "./PositionRegistry.sol";
 
-/// @title PRC-369 Composition Position Registry
+/// @title PRC-369 Position Composition Registry
 /// @author MINTer
 /// @notice Registers the Positions participating in a PRC-369 Composition.
 /// @dev
